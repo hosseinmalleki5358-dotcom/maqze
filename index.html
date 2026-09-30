@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شهسواری | سیستم مدیریت تعویض روغنی و آپاراتی</title>
+<meta name="description" content="سیستم مدیریت انبار، فاکتور، چک، حساب دفتری و گزارش فروش تعویض روغنی و آپاراتی شهسواری — میدان ابوالفضل، بلوار خیرآباد">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ================= TOKENS ================= */
+:root{
+  --bg:#141412; --surface:#1E1D19; --surface-2:#26251F; --line:#34322A; --line-soft:#2B2A24;
+  --text:#F3EFE6; --muted:#A6A093;
+  --yellow:#FFC400; --yellow-ink:#1A1602;
+  --orange:#FF8A00; --red:#E23B2E;
+  --r:14px; --r-sm:9px; --pill:999px;
+  --sp:4px; --f:'Vazirmatn',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--f);font-size:15px;line-height:1.7;min-height:100vh}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:var(--yellow);text-decoration:none}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px;border-radius:4px}
+::placeholder{color:#6d675c}
+.num{font-feature-settings:"tnum";direction:ltr;unicode-bidi:embed}
+h1,h2,h3{line-height:1.35}
+.muted{color:var(--muted)}
+.y{color:var(--yellow)} .o{color:var(--orange)} .r{color:var(--red)}
+
+/* ================= LOGIN ================= */
+#loginScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px}
+.pin-dots{display:flex;gap:14px;justify-content:center}
+.pin-dots span{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);transition:.25s}
+.pin-dots span.on{background:var(--yellow);border-color:var(--yellow)}
+.pin-dots.err span{border-color:var(--red);background:var(--red)}
+.keypad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;justify-content:center}
+.keypad button{height:60px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);font-size:22px;font-weight:700;transition:.2s}
+.keypad button:hover{background:var(--surface-2);border-color:var(--yellow)}
+#loginErr{min-height:22px;font-size:13px;color:var(--red)}
+.login-hint{color:var(--muted);font-size:13px}
+
+/* ================= SHELL ================= */
+#appShell{display:none;min-height:100vh}
+#appShell.on{display:block}
+header.top{position:sticky;top:0;z-index:40;background:rgba(20,20,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:14px;padding:10px 18px}
+#burger{display:none;width:42px;height:42px;border-radius:var(--r-sm);border:1px solid var(--line);align-items:center;justify-content:center}
+#burger svg{width:20px;height:20px;stroke:var(--text)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-name{font-weight:800;font-size:16px}
+.brand-sub{font-size:12px;color:var(--yellow);font-weight:700}
+#pageTitle{margin-inline-start:auto;font-size:14px;color:var(--muted);font-weight:500}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:45}
+#overlay.on{display:block}
+aside#sidebar{position:fixed;top:0;bottom:0;right:0;width:250px;background:var(--surface);border-inline-start:1px solid var(--line-soft);z-index:50;padding:18px 12px;overflow-y:auto;transition:transform .3s ease;transform:translateX(0)}
+aside#sidebar .side-head{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 16px;border-bottom:1px solid var(--line-soft);margin-bottom:12px}
+#sideClose{display:none;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);font-size:16px}
+.nav-link{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:var(--r-sm);color:var(--muted);font-weight:500;font-size:14.5px;transition:.2s;margin-bottom:2px}
+.nav-link svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;flex:none}
+.nav-link:hover{background:var(--surface-2);color:var(--text)}
+.nav-link.on{background:var(--surface-2);color:var(--yellow);font-weight:700}
+.nav-link .badge{margin-inline-start:auto;background:var(--orange);color:#1A0E00;font-size:11px;font-weight:800;border-radius:var(--pill);padding:1px 8px}
+main{padding:24px;max-width:1200px;margin:0 auto}
+.page{display:none}
+.page.on{display:block;animation:fadein .3s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:900px){
+  #burger{display:flex}
+  #sideClose{display:block}
+  aside#sidebar{transform:translateX(100%);box-shadow:-12px 0 40px rgba(0,0,0,.5)}
+  aside#sidebar.open{transform:translateX(0)}
+  main{padding:16px 12px}
+  #pageTitle{display:none}
+}
+
+/* ================= ALARM BANNER ================= */
+#alarmBanner{display:none;background:#2A1B07;border:1px solid var(--orange);border-radius:var(--r);padding:12px 16px;margin-bottom:18px;color:#FFD9A8;font-size:14px}
+#alarmBanner.on{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#alarmBanner b{color:var(--orange)}
+#alarmBanner button{margin-inline-start:auto;background:var(--orange);color:#1A0E00;font-weight:700;border-radius:var(--pill);padding:5px 14px;font-size:13px}
+
+/* ================= COMPONENTS ================= */
+.card{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--r);padding:20px}
+.card+.card{margin-top:16px}
+.card h2{font-size:16px;font-weight:800;margin-bottom:14px}
+.card h2 small{font-weight:500;color:var(--muted);font-size:12.5px;margin-inline-start:8px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.stat{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--r);padding:16px 18px}
+.stat .lbl{font-size:13px;color:var(--muted)}
+.stat .val{font-size:26px;font-weight:800;margin-top:2px}
+.stat.hl{border-color:var(--yellow)}
+.stat.warn{border-color:var(--orange)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-sm);padding:10px 18px;font-weight:700;font-size:14px;transition:.25s;border:1px solid transparent}
+.btn-y{background:var(--yellow);color:var(--yellow-ink)}
+.btn-y:hover{background:#FFD34D}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--text)}
+.btn-ghost:hover{border-color:var(--yellow);color:var(--yellow)}
+.btn-danger{background:transparent;border-color:#5a2620;color:var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{padding:5px 12px;font-size:12.5px;border-radius:8px}
+.btn-block{width:100%}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.inp,select.inp,textarea.inp{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;transition:.2s}
+.inp:focus{border-color:var(--yellow);outline:none}
+select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 49%,var(--muted) 50%),linear-gradient(-45deg,transparent 49%,var(--muted) 50%);background-position:left 14px center,left 8px center;background-size:6px 6px;background-repeat:no-repeat}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1;min-width:130px}
+.row .btn{flex:none;min-width:0}
+.table-wrap{overflow-x:auto;border:1px solid var(--line-soft);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+th{background:var(--surface-2);text-align:right;padding:10px 12px;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--line-soft);white-space:nowrap}
+tr:hover td{background:rgba(255,196,0,.03)}
+.tag{display:inline-block;border-radius:var(--pill);padding:2px 10px;font-size:11.5px;font-weight:700;border:1px solid}
+.tag-y{color:var(--yellow);border-color:#4d3d00;background:rgba(255,196,0,.08)}
+.tag-o{color:var(--orange);border-color:#5a3400;background:rgba(255,138,0,.08)}
+.tag-r{color:var(--red);border-color:#5a2620;background:rgba(226,59,46,.08)}
+.tag-m{color:var(--muted);border-color:var(--line)}
+.empty{padding:36px 16px;text-align:center;color:var(--muted);font-size:14px}
+.empty svg{width:38px;height:38px;stroke:var(--line);fill:none;stroke-width:1.5;display:block;margin:0 auto 10px}
+.search-box{position:relative}
+.drop{position:absolute;top:calc(100% + 6px);right:0;left:0;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);z-index:30;max-height:260px;overflow-y:auto;display:none}
+.drop.on{display:block}
+.drop button{display:block;width:100%;text-align:right;padding:10px 14px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.drop button:hover{background:var(--bg)}
+.drop small{color:var(--muted)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{border:1px solid var(--line);border-radius:var(--pill);padding:7px 16px;font-size:13px;color:var(--muted);font-weight:600;transition:.2s}
+.tab.on{background:var(--yellow);color:var(--yellow-ink);border-color:var(--yellow)}
+
+/* ================= INVOICE BUILDER ================= */
+.inv-wrap{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media(max-width:980px){.inv-wrap{grid-template-columns:1fr}}
+.line{display:grid;grid-template-columns:auto 1fr 62px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+.line.off .name-inp,.line.off .qty,.line.off .price{opacity:.35;pointer-events:none}
+.line .chk{width:19px;height:19px;accent-color:var(--yellow);cursor:pointer}
+.line .name-inp{background:transparent;border:1px dashed transparent;border-radius:6px;padding:5px 8px}
+.line .name-inp:hover,.line .name-inp:focus{border-color:var(--line);background:var(--bg)}
+.line .qty,.line .price{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 8px;text-align:center;font-size:13.5px}
+.line .qty:focus,.line .price:focus{border-color:var(--yellow);outline:none}
+.stock-hint{font-size:11px;color:var(--muted);margin-inline-start:6px}
+.stock-hint.low{color:var(--orange)}
+.tot-row{display:flex;justify-content:space-between;padding:7px 0;font-size:14.5px}
+.tot-row .v{font-weight:800}
+.tot-row.grand{border-top:1px solid var(--line);margin-top:8px;padding-top:12px;font-size:17px}
+.tot-row.grand .v{color:var(--yellow);font-size:20px}
+.radio-pay{display:flex;gap:8px;flex-wrap:wrap}
+.radio-pay label{flex:1;min-width:88px;border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 4px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:.2s}
+.radio-pay input{display:none}
+.radio-pay label:has(input:checked){border-color:var(--yellow);color:var(--yellow);background:rgba(255,196,0,.07)}
+
+/* ================= MODAL / TOAST ================= */
+#modalRoot{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+#modalRoot.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);width:100%;max-width:520px;animation:pop .25s ease}
+.modal.wide{max-width:760px}
+@keyframes pop{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line-soft)}
+.modal-head h3{font-size:15.5px;font-weight:800}
+.modal-head button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);color:var(--muted)}
+.modal-body{padding:20px}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line-soft)}
+#toastRoot{position:fixed;bottom:20px;right:50%;transform:translateX(50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--surface-2);border:1px solid var(--yellow);color:var(--text);border-radius:var(--pill);padding:10px 22px;font-size:13.5px;font-weight:600;animation:pop .25s ease;max-width:90vw;text-align:center}
+.toast.err{border-color:var(--red)}
+
+/* ================= PRINT ================= */
+#printArea{display:none;background:#fff;color:#111}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{display:block!important;position:absolute;inset:0;padding:18px 10px;background:#fff}
+  @page{margin:12mm}
+}
+.pi-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #111;padding-bottom:12px;margin-bottom:14px}
+.pi-head .shop{font-weight:800;font-size:19px}
+.pi-head .shop small{display:block;font-weight:500;font-size:11.5px;color:#444;margin-top:2px}
+.pi-title{font-weight:800;font-size:16px;text-align:center;border:2px solid #111;border-radius:30px;padding:4px 22px;align-self:center}
+.pi-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;font-size:13px;margin-bottom:12px}
+.pi-meta b{font-weight:700}
+.pi-table{width:100%;border-collapse:collapse;font-size:13px}
+.pi-table th,.pi-table td{border:1px solid #999;padding:6px 8px;text-align:right}
+.pi-table th{background:#f0ede6;font-size:12px}
+.pi-tot{margin-top:10px;width:260px;margin-inline-start:auto;font-size:13.5px}
+.pi-tot div{display:flex;justify-content:space-between;padding:3px 0}
+.pi-tot .g{border-top:2px solid #111;font-weight:800;font-size:15px;padding-top:6px}
+.pi-note{margin-top:14px;font-size:12.5px;background:#f6f3ec;border:1px solid #ccc;border-radius:8px;padding:8px 12px}
+.pi-foot{margin-top:16px;border-top:1px dashed #999;padding-top:8px;font-size:11.5px;color:#444;display:flex;justify-content:space-between}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== LOGIN ====== -->
+<div id="loginScreen">
+  <div id="loginLogo"></div>
+  <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span></div>
+  <div id="loginErr"></div>
+  <div class="keypad" id="keypad"></div>
+  <p class="login-hint">رمز پیش‌فرض: <span class="num">1234</span> — از تنظیمات قابل تغییر است</p>
+</div>
+
+<!-- ====== APP SHELL ====== -->
+<div id="appShell">
+  <header class="top">
+    <button id="burger" aria-label="منو"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg></button>
+    <div class="brand"><span id="headLogo"></span>
+      <div><div class="brand-name">شهسواری</div><div class="brand-sub">تعویض روغنی و آپاراتی</div></div>
+    </div>
+    <span id="pageTitle"></span>
+  </header>
+  <div id="overlay"></div>
+  <aside id="sidebar">
+    <div class="side-head"><span style="font-weight:800">منو</span><button id="sideClose" aria-label="بستن">✕</button></div>
+    <nav id="mainNav"></nav>
+  </aside>
+  <main>
+    <div id="alarmBanner"></div>
+    <section class="page" id="page-dashboard"><div class="page-body"></div></section>
+    <section class="page" id="page-inventory"><div class="page-body"></div></section>
+    <section class="page" id="page-suppliers"><div class="page-body"></div></section>
+    <section class="page" id="page-cheques"><div class="page-body"></div></section>
+    <section class="page" id="page-customers"><div class="page-body"></div></section>
+    <section class="page" id="page-invoice"><div class="page-body"></div></section>
+    <section class="page" id="page-invoices"><div class="page-body"></div></section>
+    <section class="page" id="page-ledger"><div class="page-body"></div></section>
+    <section class="page" id="page-report"><div class="page-body"></div></section>
+    <section class="page" id="page-settings"><div class="page-body"></div></section>
+  </main>
+</div>
+
+<!-- ====== MODAL / TOAST / PRINT ====== -->
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+<div id="printArea"></div>
+
+<script>
+/* ============================================================
+   تعویض روغنی و آپاراتی شهسواری — سیستم مدیریت فروشگاه
+   همه‌ی داده‌ها در localStorage این مرورگر ذخیره می‌شود.
+============================================================ */
+'use strict';
+
+/* ---------- ثابت‌ها ---------- */
+const DB_KEY='shahsavari_db_v1', AUTH_KEY='shahsavari_auth';
+const SERVICES=[
+  {key:'oil',   name:'روغن موتور'},
+  {key:'oilf',  name:'فیلتر روغن'},
+  {key:'gear',  name:'روغن گیربکس'},
+  {key:'airf',  name:'فیلتر هوا'},
+  {key:'cabin', name:'فیلتر کابین'},
+  {key:'diff',  name:'روغن واسکازین'},
+  {key:'hyd',   name:'روغن هیدرولیک'},
+  {key:'brake', name:'روغن ترمز'},
+  {key:'rad',   name:'آب رادیاتور'},
+  {key:'anti',  name:'ضدیخ'},
+  {key:'fuel',  name:'صافی بنزین'},
+];
+const PAGES={
+  dashboard:'داشبورد', inventory:'انبار', suppliers:'فروشنده‌ها', cheques:'چک‌ها',
+  customers:'مشتریان', invoice:'فاکتور جدید', invoices:'آرشیو فاکتورها',
+  ledger:'حساب دفتری', report:'گزارش فروش', settings:'تنظیمات'
+};
+const ICONS={
+  dashboard:'<path d="M4 13h6V4H4v9zm0 7h6v-4H4v4zm10 0h6V11h-6v9zm0-16v4h6V4h-6z"/>',
+  inventory:'<path d="M21 8l-9-5-9 5v8l9 5 9-5V8zM3.3 8.3L12 13l8.7-4.7M12 13v9"/>',
+  suppliers:'<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm13 10v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',
+  cheques:'<path d="M2 9a3 3 0 010-6h14a3 3 0 013 3v12a3 3 0 01-3 3H5a3 3 0 01-3-3V9zM6 7h8M6 11h4"/>',
+  customers:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm14 10v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',
+  invoice:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6M9 13h6M9 17h6"/>',
+  invoices:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  ledger:'<path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5v15zM9 7h7M9 11h7"/>',
+  report:'<path d="M18 20V10M12 20V4M6 20v-6"/>',
+  settings:'<path d="M12 15a3 3 0 100-6 3 3 0 000 6zm7.4-3a7.4 7.4 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-2-1.2L14.5 3h-4l-.4 2.6a7.4 7.4 0 00-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 000 2.4l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 002 1.2l.4 2.6h4l.4-2.6a7.4 7.4 0 002-1.2l2.4 1 2-3.4-2-1.6c.06-.4.1-.8.1-1.2z"/>'
+};
+
+/* ---------- وضعیت ---------- */
+let db=loadDB();
+let pinBuf='';
+
+function loadDB(){
+  try{
+    const raw=localStorage.getItem(DB_KEY);
+    if(raw){const d=JSON.parse(raw); if(d&&d.pin!==undefined) return d;}
+  }catch(e){}
+  return {pin:'1234',seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],settings:{}};
+}
+function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db))}
+
+/* ---------- ابزار ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>parseFloat(v)||0;
+const fmt=n=>Math.round(num(n)).toLocaleString('en-US');
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const faDate=iso=>{try{return new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'long',day:'numeric'}).format(new Date(iso+'T00:00:00'))}catch(e){return iso}};
+const daysDiff=iso=>{const a=new Date(iso+'T00:00:00'),b=new Date(todayStr()+'T00:00:00');return Math.round((a-b)/864e5)};
+function toast(msg,err){const t=document.createElement('div');t.className='toast'+(err?' err':'');t.textContent=msg;$('#toastRoot').appendChild(t);setTimeout(()=>t.remove(),3200)}
+function supplierName(id){const s=db.suppliers.find(x=>x.id===id);return s?s.name:'—'}
+function customer(id){return db.customers.find(c=>c.id===id)}
+function currentSell(name){ // قیمت فروش فعلی = آخرین بچ خرید این محصول
+  const bs=db.batches.filter(b=>b.product===name).sort((a,b)=>(b.date+a.id).localeCompare(a.date+b.id));
+  return bs.length?bs[0].sellPrice:null;
+}
+function stockOf(name){return db.batches.filter(b=>b.product===name).reduce((s,b)=>s+b.qtyLeft,0)}
+/* کسر FIFO از بچ‌ها — خروجی: بهای تمام‌شده و تخصیص‌ها */
+function consume(name,qty){
+  let rem=qty,cost=0;const alloc=[];
+  const bs=db.batches.filter(b=>b.product===name&&b.qtyLeft>0).sort((a,b)=>(a.date+a.id).localeCompare(b.date+b.id));
+  for(const b of bs){if(rem<=0)break;const take=Math.min(b.qtyLeft,rem);b.qtyLeft-=take;cost+=take*b.buyPrice;alloc.push({batchId:b.id,qty:take});rem-=take}
+  return{cost,alloc,short:rem};
+}
+
+/* ---------- لوگو (بازسازی تابلو به صورت SVG) ---------- */
+function logoFull(w){
+  return `<svg viewBox="0 0 400 210" width="${w}" style="max-width:100%" role="img" aria-label="لوگوی شهسواری">
+  <rect x="4" y="4" width="392" height="202" rx="18" fill="#141412" stroke="#2e2d28"/>
+  <circle cx="78" cy="92" r="56" fill="#101010" stroke="#3a3a34" stroke-width="2"/>
+  <circle cx="78" cy="92" r="55" fill="none" stroke="#3d3d38" stroke-width="7" stroke-dasharray="5 9"/>
+  <circle cx="78" cy="92" r="26" fill="#26251f" stroke="#4a4a42" stroke-width="2"/>
+  <circle cx="78" cy="92" r="7" fill="#4a4a42"/>
+  <circle cx="78" cy="76" r="3" fill="#4a4a42"/><circle cx="92" cy="88" r="3" fill="#4a4a42"/><circle cx="87" cy="105" r="3" fill="#4a4a42"/><circle cx="69" cy="105" r="3" fill="#4a4a42"/><circle cx="64" cy="88" r="3" fill="#4a4a42"/>
+  <g fill="#E23B2E">
+    <rect x="322" y="32" width="16" height="16" rx="3"/><rect x="322" y="132" width="16" height="16" rx="3"/>
+    <rect x="284" y="54" width="16" height="16" rx="3" transform="rotate(45 330 90)"/>
+    <rect x="360" y="54" width="16" height="16" rx="3" transform="rotate(-45 330 90)"/>
+    <rect x="284" y="110" width="16" height="16" rx="3" transform="rotate(135 330 90)"/>
+    <rect x="360" y="110" width="16" height="16" rx="3" transform="rotate(-135 330 90)"/>
+  </g>
+  <circle cx="330" cy="90" r="48" fill="#E23B2E"/>
+  <circle cx="330" cy="90" r="33" fill="#141412"/>
+  <path d="M318 84h22a3 3 0 0 0 3-3v-5a3 3 0 0 0-3-3h-9l-7-7h-4v7h-2a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3z" fill="#FFC400"/>
+  <text x="330" y="104" text-anchor="middle" font-family="Vazirmatn,sans-serif" font-size="13" font-weight="800" letter-spacing="3" fill="#FFC400">OIL</text>
+  <path d="M330 146c-5 7-5 13 0 13s5-6 0-13z" fill="#FFC400"/>
+  <rect x="118" y="60" width="164" height="62" rx="31" fill="#E23B2E"/>
+  <text x="200" y="103" text-anchor="middle" font-family="Vazirmatn,sans-serif" font-size="33" font-weight="800" fill="#fff">شهسواری</text>
+  <text x="200" y="178" text-anchor="middle" font-family="Vazirmatn,sans-serif" font-size="26" font-weight="800" fill="#FFC400">تعویض روغنی و آپاراتی</text>
+</svg>`;
+}
+function logoMark(){
+  return `<svg viewBox="0 0 300 62" width="150" height="31" aria-hidden="true"><rect x="2" y="4" width="296" height="54" rx="27" fill="none" stroke="#E23B2E" stroke-width="3"/><text x="150" y="41" text-anchor="middle" font-family="Vazirmatn,sans-serif" font-size="28" font-weight="800" fill="#fff">شهسواری</text></svg>`;
+}
+
+/* ---------- ورود (PIN) ---------- */
+function initLogin(){
+  $('#loginLogo').innerHTML=logoFull(340);
+  const kp=$('#keypad');
+  ['1','2','3','4','5','6','7','8','9','⌫','0','✓'].forEach(k=>{
+    const b=document.createElement('button');b.textContent=k;b.setAttribute('aria-label',k);
+    b.onclick=()=>pressKey(k);kp.appendChild(b);
+  });
+  document.addEventListener('keydown',e=>{
+    if($('#loginScreen').style.display==='none')return;
+    if(/^[0-9]$/.test(e.key))pressKey(e.key);
+    else if(e.key==='Backspace')pressKey('⌫');
+    else if(e.key==='Enter')pressKey('✓');
+  });
+}
+function pressKey(k){
+  const dots=$$('#pinDots span');
+  if(k==='⌫'){pinBuf=pinBuf.slice(0,-1)}
+  else if(k==='✓'){tryPin();return}
+  else if(pinBuf.length<4){pinBuf+=k}
+  dots.forEach((d,i)=>d.classList.toggle('on',i<pinBuf.length));
+  if(pinBuf.length===4)setTimeout(tryPin,120);
+}
+function tryPin(){
+  if(pinBuf===db.pin){
+    sessionStorage.setItem(AUTH_KEY,'1');
+    showApp();
+  }else{
+    $('#pinDots').classList.add('err');$('#loginErr').textContent='رمز اشتباه است، دوباره تلاش کنید';
+    setTimeout(()=>{pinBuf='';$('#pinDots').classList.remove('err');$$('#pinDots span').forEach(d=>d.classList.remove('on'));$('#loginErr').textContent=''},900);
+  }
+  pinBuf='';$$('#pinDots span').forEach(d=>d.classList.remove('on'));
+}
+function showApp(){
+  $('#loginScreen').style.display='none';$('#appShell').classList.add('on');
+  buildNav();go('dashboard');checkAlarms();
+}
+
+/* ---------- ناوبری ---------- */
+function buildNav(){
+  const dueSoon=db.cheques.filter(c=>c.status==='open'&&daysDiff(c.dueDate)<=1).length;
+  const items=[
+    ['dashboard','داشبورد'],['invoice','فاکتور جدید'],['inventory','انبار'],['suppliers','فروشنده‌ها'],
+    ['cheques','چک‌ها'],['customers','مشتریان'],['invoices','آرشیو فاکتورها'],
+    ['ledger','حساب دفتری'],['report','گزارش فروش'],['settings','تنظیمات']
+  ];
+  $('#mainNav').innerHTML=items.map(([p,t])=>
+    `<button class="nav-link" data-nav="${p}"><svg viewBox="0 0 24 24">${ICONS[p]}</svg>${t}${p==='cheques'&&dueSoon?`<span class="badge num">${dueSoon}</span>`:''}</button>`).join('');
+}
+function go(page){
+  $$('.page').forEach(s=>s.classList.remove('on'));
+  $('#page-'+page).classList.add('on');
+  $$('.nav-link').forEach(b=>b.classList.toggle('on',b.dataset.nav===page));
+  $('#pageTitle').textContent=PAGES[page];
+  closeSidebar();buildNav();
+  const R={dashboard:renderDashboard,inventory:renderInventory,suppliers:renderSuppliers,cheques:renderCheques,customers:renderCustomers,invoice:renderNewInvoice,invoices:renderInvoicesList,ledger:renderLedger,report:renderReport,settings:renderSettings};
+  R[page]();
+  window.scrollTo({top:0});
+}
+function closeSidebar(){$('#sidebar').classList.remove('open');$('#overlay').classList.remove('on')}
+$('#burger').onclick=()=>{$('#sidebar').classList.add('open');$('#overlay').classList.add('on')};
+$('#sideClose').onclick=closeSidebar;
+$('#overlay').onclick=closeSidebar;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-nav]');if(b)go(b.dataset.nav)});
+
+/* ---------- مودال ---------- */
+function openModal(title,body,foot,wide){
+  $('#modalRoot').innerHTML=`<div class="modal${wide?' wide':''}" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3>${title}</h3><button data-modal-close aria-label="بستن">✕</button></div>
+    <div class="modal-body">${body}</div>${foot?`<div class="modal-foot">${foot}</div>`:''}</div>`;
+  $('#modalRoot').classList.add('on');
+}
+function closeModal(){$('#modalRoot').classList.remove('on');$('#modalRoot').innerHTML=''}
+document.addEventListener('click',e=>{
+  if(e.target.id==='modalRoot'||e.target.closest('[data-modal-close]'))closeModal();
+});
+function confirmBox(msg,onYes){
+  openModal('تأیید',`<p style="font-size:14.5px">${msg}</p>`,
+    `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-danger" id="cfYes">بله، انجام بده</button>`);
+  $('#cfYes').onclick=()=>{closeModal();onYes()};
+}
+
+/* ================= داشبورد ================= */
+function todayInvoices(){return db.invoices.filter(i=>i.date===todayStr())}
+function renderDashboard(){
+  const ti=todayInvoices();
+  const rev=ti.reduce((s,i)=>s+i.total,0);
+  const prof=ti.reduce((s,i)=>s+(i.total-i.cost),0);
+  const debt=db.customers.reduce((s,c)=>{const b=balanceOf(c.id);return s+(b>0?b:0)},0);
+  const soon=db.cheques.filter(c=>c.status==='open'&&daysDiff(c.dueDate)<=1);
+  const b=$('#page-dashboard .page-body');
+  b.innerHTML=`
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="stat hl"><div class="lbl">فروش امروز</div><div class="val num">${fmt(rev)}</div><div class="lbl">تومان</div></div>
+    <div class="stat"><div class="lbl">سود امروز</div><div class="val num" style="color:${prof>=0?'var(--yellow)':'var(--red)'}">${fmt(prof)}</div><div class="lbl">تومان</div></div>
+    <div class="stat"><div class="lbl">فاکتورهای امروز</div><div class="val num">${ti.length}</div><div class="lbl">فقره</div></div>
+    <div class="stat ${debt>0?'warn':''}"><div class="lbl">مطالبات نسیه</div><div class="val num">${fmt(debt)}</div><div class="lbl">تومان</div></div>
+  </div>
+  <div class="row" style="margin-bottom:16px;gap:10px">
+    <button class="btn btn-y" data-go-invoice>+ صدور فاکتور</button>
+    <button class="btn btn-ghost" data-open-batch>+ ثبت خرید انبار</button>
+    <button class="btn btn-ghost" data-open-customer>+ مشتری جدید</button>
+  </div>
+  ${soon.length?`<div class="card" style="border-color:var(--orange)"><h2 class="o">⏰ چک‌های سررسید نزدیک</h2>${soon.map(chequeRow).join('')}</div>`:''}
+  <div class="card"><h2>آخرین فاکتورها <small>${faDate(todayStr())}</small></h2>
+    ${ti.length?tableWrap(`<table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>نوع</th><th></th></tr></thead><tbody>${ti.slice(-6).reverse().map(invRow).join('')}</tbody></table>`)
+    :emptyBox('امروز هنوز فاکتوری صادر نشده')}</div>`;
+  b.querySelector('[data-go-invoice]').onclick=()=>go('invoice');
+  b.querySelector('[data-open-batch]').onclick=()=>openBatchModal();
+  b.querySelector('[data-open-customer]').onclick=()=>openCustomerModal();
+  b.querySelectorAll('[data-view-inv]').forEach(el=>el.onclick=()=>viewInvoice(el.dataset.viewInv));
+}
+function tableWrap(t){return `<div class="table-wrap">${t}</div>`}
+function emptyBox(msg){return `<div class="empty"><svg viewBox="0 0 24 24"><path d="M20 7H4a1 1 0 00-1 1v11a1 1 0 001 1h16a1 1 0 001-1V8a1 1 0 00-1-1zM8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>${msg}</div>`}
+function payTag(t){return t==='cash'?'<span class="tag tag-y">نقدی</span>':t==='credit'?'<span class="tag tag-r">نسیه</span>':'<span class="tag tag-o">چک</span>'}
+function invRow(i){const c=customer(i.customerId);
+  return `<tr><td class="num">${i.no}</td><td>${esc(c?c.name:'—')}</td><td class="num y" style="font-weight:700">${fmt(i.total)}</td><td>${payTag(i.payType)}</td>
+  <td><button class="btn btn-ghost btn-sm" data-view-inv="${i.id}">مشاهده</button></td></tr>`}
+function chequeRow(c){
+  const d=daysDiff(c.dueDate);
+  const when=d===0?'امروز':d===1?'فردا':d<0?`${Math.abs(d)} روز گذشته`:`${d} روز دیگر`;
+  return `<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px">
+    <div><b>${esc(c.party)}</b> <span class="muted">(${c.direction==='out'?'چک صادره به فروشنده':'چک دریافتی از مشتری'})</span></div>
+    <div><span class="num" style="font-weight:800">${fmt(c.amount)}</span> تومان — سررسید: <b class="o">${when}</b> <span class="muted num">(${faDate(c.dueDate)})</span></div></div>`;
+}
+
+/* ================= انبار ================= */
+function renderInventory(){
+  const bs=[...db.batches].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id));
+  const stockValue=bs.reduce((s,b)=>s+b.qtyLeft*b.buyPrice,0);
+  const prods=[...new Set([...db.batches.map(b=>b.product),...SERVICES.map(s=>s.name)])];
+  $('#page-inventory .page-body').innerHTML=`
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="stat"><div class="lbl">تعداد بچ‌های خرید</div><div class="val num">${bs.length}</div></div>
+    <div class="stat hl"><div class="lbl">ارزش موجودی انبار</div><div class="val num">${fmt(stockValue)}</div><div class="lbl">تومان</div></div>
+    <div class="stat"><div class="lbl">اقلام به اتمام رسیده</div><div class="val num">${[...new Set(db.batches.filter(b=>b.qtyLeft<=0).map(b=>b.product))].length}</div></div>
+  </div>
+  <div class="row" style="margin-bottom:16px;gap:10px">
+    <button class="btn btn-y" id="addBatch">+ ثبت خرید جدید</button>
+    <span class="muted" style="font-size:13px">فروش‌ها به‌صورت FIFO از قدیمی‌ترین بچ کسر می‌شوند؛ قیمت هر بچ مستقل می‌ماند.</span>
+  </div>
+  <div class="card"><h2>بچ‌های خرید</h2>
+  ${bs.length?tableWrap(`<table><thead><tr><th>تاریخ</th><th>محصول</th><th>خرید / مانده</th><th>قیمت خرید</th><th>قیمت فروش</th><th>فروشنده</th><th>پرداخت</th><th></th></tr></thead><tbody>
+  ${bs.map(b=>`<tr style="${b.qtyLeft<=0?'opacity:.45':''}">
+    <td class="num">${b.date}</td>
+    <td><b>${esc(b.product)}</b>${b.note?`<br><small class="muted">${esc(b.note)}</small>`:''}</td>
+    <td class="num">${fmt(b.qty)} / <b style="color:${b.qtyLeft>0?'var(--yellow)':'var(--red)'}">${fmt(b.qtyLeft)}</b></td>
+    <td class="num">${fmt(b.buyPrice)}</td>
+    <td class="num y" style="font-weight:700">${fmt(b.sellPrice)}</td>
+    <td>${esc(supplierName(b.supplierId))}</td>
+    <td>${b.payCash?`نقد: <span class="num">${fmt(b.payCash)}</span>`:''} ${b.payCheque?`<br>چک: <span class="num">${fmt(b.payCheque)}</span>`:''} ${!b.payCash&&!b.payCheque?'—':''}</td>
+    <td><button class="btn btn-ghost btn-sm" data-edit-batch="${b.id}">ویرایش</button> <button class="btn btn-danger btn-sm" data-del-batch="${b.id}">حذف</button></td>
+  </tr>`).join('')}</tbody></table>`):emptyBox('هنوز خریدی ثبت نشده — اولین بچ را ثبت کنید')}
+  </div>
+  <datalist id="prodList">${prods.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>`;
+  $('#addBatch').onclick=()=>openBatchModal();
+  $$('#page-inventory [data-edit-batch]').forEach(el=>el.onclick=()=>openBatchModal(db.batches.find(x=>x.id===el.dataset.editBatch)));
+  $$('#page-inventory [data-del-batch]').forEach(el=>el.onclick=()=>{
+    const b=db.batches.find(x=>x.id===el.dataset.delBatch);
+    const used=b.qty-b.qtyLeft;
+    confirmBox(used>0?`از این بچ فروش رفته (${used} عدد). حذف باعث ناسازگاری سود می‌شود؛ مطمئنید؟`:'این بچ حذف شود؟',()=>{
+      db.batches=db.batches.filter(x=>x.id!==b.id);db.cheques=db.cheques.filter(c=>c.batchId!==b.id);saveDB();renderInventory();toast('بچ حذف شد');
+    });
+  });
+}
+function openBatchModal(batch){
+  const isNew=!batch;
+  const supOpts=db.suppliers.map(s=>`<option value="${s.id}" ${batch&&batch.supplierId===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+  openModal(isNew?'ثبت خرید جدید (بچ انبار)':'ویرایش بچ خرید',`
+    <div class="field"><label>نام محصول *</label><input class="inp" id="bProd" list="prodList" value="${batch?esc(batch.product):''}" placeholder="مثلاً: روغن موتور — بهران ۴۰۰۰"></div>
+    <div class="row">
+      <div class="field"><label>تعداد *</label><input class="inp num" id="bQty" type="number" min="0" step="any" value="${batch?batch.qty:''}"></div>
+      <div class="field"><label>تاریخ خرید *</label><input class="inp num" id="bDate" type="date" value="${batch?batch.date:todayStr()}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>قیمت خرید (واحد، تومان) *</label><input class="inp num" id="bBuy" type="number" min="0" value="${batch?batch.buyPrice:''}"></div>
+      <div class="field"><label>قیمت فروش (واحد، تومان) *</label><input class="inp num" id="bSell" type="number" min="0" value="${batch?batch.sellPrice:''}"></div>
+    </div>
+    <div class="field"><label>فروشنده</label><select class="inp" id="bSup"><option value="">— انتخاب کنید —</option>${supOpts}</select></div>
+    <div class="row">
+      <div class="field"><label>پرداخت نقدی (تومان)</label><input class="inp num" id="bCash" type="number" min="0" value="${batch?batch.payCash:''}"></div>
+      <div class="field"><label>پرداخت با چک (تومان)</label><input class="inp num" id="bChq" type="number" min="0" value="${batch?batch.payCheque:''}"></div>
+    </div>
+    <div class="field" id="chqDateWrap" style="display:none"><label>تاریخ سررسید چک *</label><input class="inp num" id="bChqDate" type="date"></div>
+    <div class="field"><label>توضیحات</label><input class="inp" id="bNote" value="${batch?esc(batch.note||''):''}" placeholder="برند، ویسکوزیته، بچ و ..."></div>
+    ${isNew?'':'<p class="muted" style="font-size:12.5px">⚠ ویرایش قیمت این بچ فقط همین بچ را تغییر می‌دهد؛ بچ‌های قبلی با قیمت خودشان باقی می‌مانند.</p>'}`,
+    `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveBatch">ذخیره</button>`);
+  const tgl=()=>$('#chqDateWrap').style.display=num($('#bChq').value)>0?'block':'none';
+  $('#bChq').oninput=tgl;tgl();
+  $('#saveBatch').onclick=()=>{
+    const prod=$('#bProd').value.trim(),qty=num($('#bQty').value),buy=num($('#bBuy').value),sell=num($('#bSell').value),date=$('#bDate').value;
+    if(!prod||qty<=0||$('#bBuy').value===''||$('#bSell').value===''||!date){toast('نام محصول، تعداد، قیمت‌ها و تاریخ را کامل کنید',1);return}
+    const chq=num($('#bChq').value);
+    if(isNew){
+      const id=uid();
+      db.batches.push({id,product:prod,qty,qtyLeft:qty,buyPrice:buy,sellPrice:sell,date,supplierId:$('#bSup').value||null,payCash:num($('#bCash').value),payCheque:chq,note:$('#bNote').value.trim()});
+      if(chq>0){
+        const d=$('#bChqDate').value;
+        if(!d){toast('تاریخ سررسید چک را وارد کنید',1);return}
+        db.cheques.push({id:uid(),direction:'out',party:supplierName($('#bSup').value)||'فروشنده',amount:chq,dueDate:d,status:'open',batchId:id,bank:'',serial:''});
+      }
+      toast('خرید ثبت شد ✓');
+    }else{
+      Object.assign(batch,{product:prod,qty,qtyLeft:Math.min(batch.qtyLeft,qty)||qty,buyPrice:buy,sellPrice:sell,date,supplierId:$('#bSup').value||null,payCash:num($('#bCash').value),payCheque:chq,note:$('#bNote').value.trim()});
+      toast('بچ ویرایش شد ✓');
+    }
+    saveDB();closeModal();renderInventory();
+  };
+}
+
+/* ================= فروشنده‌ها ================= */
+function renderSuppliers(){
+  const b=$('#page-suppliers .page-body');
+  b.innerHTML=`
+  <div class="row" style="margin-bottom:16px"><button class="btn btn-y" id="addSup">+ فروشنده جدید</button></div>
+  ${db.suppliers.length?`<div class="grid g2">${db.suppliers.map(s=>{
+    const bs=db.batches.filter(x=>x.supplierId===s.id);
+    const total=bs.reduce((t,x)=>t+x.qty*x.buyPrice,0);
+    const cash=bs.reduce((t,x)=>t+x.payCash,0);
+    const chq=bs.reduce((t,x)=>t+x.payCheque,0);
+    return `<div class="card"><h2>${esc(s.name)} ${s.phone?`<small class="num">${esc(s.phone)}</small>`:''}</h2>
+      <div class="tot-row"><span>جمع خرید</span><span class="v num">${fmt(total)}</span></div>
+      <div class="tot-row"><span>پرداخت نقدی</span><span class="v num y">${fmt(cash)}</span></div>
+      <div class="tot-row"><span>پرداخت با چک</span><span class="v num o">${fmt(chq)}</span></div>
+      <div class="tot-row grand"><span>مانده بدهی</span><span class="v num ${total-cash-chq>0?'r':''}">${fmt(total-cash-chq)}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-sup-detail="${s.id}">ریز صورتحساب</button>
+      <button class="btn btn-ghost btn-sm" data-edit-sup="${s.id}">ویرایش</button>
+      <button class="btn btn-danger btn-sm" data-del-sup="${s.id}">حذف</button></div></div>`;
+  }).join('')}</div>`:emptyBox('فروشنده‌ای ثبت نشده — موقع ثبت خرید می‌توانید همان‌جا فروشنده جدید اضافه کنید')}`;
+  $('#addSup').onclick=()=>openSupplierModal();
+  b.querySelectorAll('[data-edit-sup]').forEach(el=>el.onclick=()=>openSupplierModal(db.suppliers.find(s=>s.id===el.dataset.editSup)));
+  b.querySelectorAll('[data-del-sup]').forEach(el=>el.onclick=()=>confirmBox('این فروشنده حذف شود؟ (خریدهای قبلی باقی می‌مانند)',()=>{
+    db.suppliers=db.suppliers.filter(s=>s.id!==el.dataset.delSup);saveDB();renderSuppliers();toast('حذف شد')}));
+  b.querySelectorAll('[data-sup-detail]').forEach(el=>el.onclick=()=>showSupplierDetail(el.dataset.supDetail));
+}
+function openSupplierModal(s){
+  const isNew=!s;
+  openModal(isNew?'فروشنده جدید':'ویرایش فروشنده',`
+    <div class="field"><label>نام فروشنده / فروشگاه *</label><input class="inp" id="sName" value="${s?esc(s.name):''}"></div>
+    <div class="field"><label>شماره تماس</label><input class="inp num" id="sPhone" value="${s?esc(s.phone||''):''}"></div>`,
+    `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveSup">ذخیره</button>`);
+  $('#saveSup').onclick=()=>{
+    const name=$('#sName').value.trim();if(!name){toast('نام را وارد کنید',1);return}
+    if(isNew)db.suppliers.push({id:uid(),name,phone:$('#sPhone').value.trim()});
+    else Object.assign(s,{name,phone:$('#sPhone').value.trim()});
+    saveDB();closeModal();renderSuppliers();toast('ذخیره شد ✓');
+  };
+}
+function showSupplierDetail(id){
+  const s=db.suppliers.find(x=>x.id===id);if(!s)return;
+  const bs=db.batches.filter(x=>x.supplierId===id);
+  const chqs=db.cheques.filter(c=>c.direction==='out'&&bs.some(b=>b.id===c.batchId));
+  openModal('ریز صورتحساب — '+esc(s.name),`
+    ${bs.length?`<div class="table-wrap"><table><thead><tr><th>تاریخ</th><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th><th>نقد</th><th>چک</th></tr></thead><tbody>
+    ${bs.map(b=>`<tr><td class="num">${b.date}</td><td>${esc(b.product)}</td><td class="num">${fmt(b.qty)}</td><td class="num">${fmt(b.buyPrice)}</td><td class="num">${fmt(b.qty*b.buyPrice)}</td><td class="num">${fmt(b.payCash)}</td><td class="num">${fmt(b.payCheque)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">خریدی از این فروشنده ثبت نشده.</p>'}
+    ${chqs.length?`<h3 style="margin:16px 0 8px;font-size:14px">چک‌های صادره به این فروشنده</h3>
+    <div class="table-wrap"><table><thead><tr><th>مبلغ</th><th>سررسید</th><th>وضعیت</th></tr></thead><tbody>
+    ${chqs.map(c=>`<tr><td class="num">${fmt(c.amount)}</td><td class="num">${c.dueDate}</td><td>${chqStatusTag(c)}</td></tr>`).join('')}</tbody></table></div>`:''}`,
+    `<button class="btn btn-y" data-modal-close>بستن</button>`,true);
+}
+function chqStatusTag(c){return c.status==='open'?'<span class="tag tag-o">در جریان</span>':c.status==='cleared'?'<span class="tag tag-y">پاس شده</span>':'<span class="tag tag-r">برگشتی</span>'}
+
+/* ================= چک‌ها ================= */
+function renderCheques(){
+  const list=[...db.cheques].sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
+  const open=list.filter(c=>c.status==='open');
+  const out=open.filter(c=>c.direction==='out').reduce((s,c)=>s+c.amount,0);
+  const inn=open.filter(c=>c.direction==='in').reduce((s,c)=>s+c.amount,0);
+  $('#page-cheques .page-body').innerHTML=`
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="stat warn"><div class="lbl">چک‌های صادره (در جریان)</div><div class="val num">${fmt(out)}</div><div class="lbl">تومان</div></div>
+    <div class="stat hl"><div class="lbl">چک‌های دریافتی (در جریان)</div><div class="val num">${fmt(inn)}</div><div class="lbl">تومان</div></div>
+    <div class="stat"><div class="lbl">تعداد کل چک‌ها</div><div class="val num">${list.length}</div></div>
+  </div>
+  <div class="row" style="margin-bottom:16px"><button class="btn btn-y" id="addChq">+ ثبت چک دستی</button></div>
+  <div class="card"><h2>لیست چک‌ها</h2>
+  ${list.length?tableWrap(`<table><thead><tr><th>طرف حساب</th><th>جهت</th><th>مبلغ</th><th>سررسید</th><th>وضعیت</th><th>بانک / شماره</th><th></th></tr></thead><tbody>
+  ${list.map(c=>`<tr><td><b>${esc(c.party)}</b></td><td>${c.direction==='out'?'<span class="tag tag-o">صادره</span>':'<span class="tag tag-y">دریافتی</span>'}</td>
+    <td class="num" style="font-weight:700">${fmt(c.amount)}</td><td class="num">${faDate(c.dueDate)} ${alarmHint(c.dueDate)}</td><td>${chqStatusTag(c)}</td>
+    <td class="muted">${esc(c.bank||'—')} ${c.serial?`<span class="num">${esc(c.serial)}</span>`:''}</td>
+    <td>${c.status==='open'?`<button class="btn btn-ghost btn-sm" data-chq-status="${c.id}">پاس شد</button>`:''}
+    <button class="btn btn-danger btn-sm" data-chq-del="${c.id}">حذف</button></td></tr>`).join('')}</tbody></table>`):emptyBox('چکی ثبت نشده')}
+  </div>`;
+  $('#addChq').onclick=()=>openChequeModal();
+  $$('#page-cheques [data-chq-status]').forEach(el=>el.onclick=()=>{const c=db.cheques.find(x=>x.id===el.dataset.chqStatus);c.status='cleared';saveDB();renderCheques();toast('چک پاس شد')});
+  $$('#page-cheques [data-chq-del]').forEach(el=>el.onclick=()=>confirmBox('این چک حذف شود؟',()=>{db.cheques=db.cheques.filter(x=>x.id!==el.dataset.chqDel);saveDB();renderCheques()}));
+}
+function alarmHint(due){
+  const d=daysDiff(due);
+  if(d===0)return '<span class="tag tag-r">امروز</span>';
+  if(d===1)return '<span class="tag tag-o">فردا</span>';
+  if(d<0)return '<span class="tag tag-r">گذشته</span>';
+  return '';
+}
+function openChequeModal(){
+  openModal('ثبت چک دستی',`
+    <div class="row">
+      <div class="field"><label>نوع</label><select class="inp" id="cDir"><option value="out">صادره (به فروشنده)</option><option value="in">دریافتی (از مشتری)</option></select></div>
+      <div class="field"><label>طرف حساب *</label><input class="inp" id="cParty"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>مبلغ (تومان) *</label><input class="inp num" id="cAmt" type="number" min="0"></div>
+      <div class="field"><label>تاریخ سررسید *</label><input class="inp num" id="cDue" type="date"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>بانک</label><input class="inp" id="cBank"></div>
+      <div class="field"><label>شماره / سریال</label><input class="inp num" id="cSerial"></div>
+    </div>`,
+    `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveChq">ذخیره</button>`);
+  $('#saveChq').onclick=()=>{
+    const party=$('#cParty').value.trim(),amt=num($('#cAmt').value),due=$('#cDue').value;
+    if(!party||amt<=0||!due){toast('طرف حساب، مبلغ و سررسید را کامل کنید',1);return}
+    db.cheques.push({id:uid(),direction:$('#cDir').value,party,amount:amt,dueDate:due,status:'open',bank:$('#cBank').value.trim(),serial:$('#cSerial').value.trim()});
+    saveDB();closeModal();renderCheques();checkAlarms();toast('چک ثبت شد ✓');
+  };
+}
+/* الارم چک: یک روز قبل + روز سررسید */
+function checkAlarms(){
+  const due=db.cheques.filter(c=>c.status==='open'&&daysDiff(c.dueDate)<=1);
+  const ban=$('#alarmBanner');
+  if(due.length){
+    ban.classList.add('on');
+    ban.innerHTML=`<span>⏰ <b>${due.length} چک</b> سررسید نزدیک یا گذشته دارد:</span>${due.map(chequeRow).join('')}
+      <button id="banGo">مشاهده چک‌ها</button>`;
+    $('#banGo').onclick=()=>go('cheques');
+    if(db.settings.notif&&'Notification'in window&&Notification.permission==='granted'){
+      try{new Notification('شهسواری — یادآوری چک',{body:due.map(c=>`${c.party}: ${fmt(c.amount)} تومان (${daysDiff(c.dueDate)===0?'امروز':'فردا'})`).join('\n')})}catch(e){}
+    }
+  }else{ban.classList.remove('on');ban.innerHTML=''}
+}
+setInterval(()=>{if($('#appShell').classList.contains('on'))checkAlarms()},36e5);
+
+/* ================= مشتریان ================= */
+function renderCustomers(q=''){
+  const list=db.customers.filter(c=>{
+    if(!q)return true;
+    const s=q.trim().toLowerCase();
+    return c.name.toLowerCase().includes(s)||String(c.phone).includes(s)||String(c.plate).toLowerCase().includes(s);
+  });
+  $('#page-customers .page-body').innerHTML=`
+  <div class="row" style="margin-bottom:16px;gap:10px">
+    <input class="inp" id="custSearch" placeholder="جستجو با نام، شماره تماس یا پلاک..." value="${esc(q)}" style="flex:2">
+    <button class="btn btn-y" id="addCust">+ مشتری جدید</button>
+  </div>
+  <div class="card"><h2>مشتریان <small>${list.length} نفر</small></h2>
+  ${list.length?tableWrap(`<table><thead><tr><th>نام</th><th>تلفن</th><th>پلاک</th><th>خودرو</th><th>مانده حساب</th><th></th></tr></thead><tbody>
+  ${list.map(c=>{const bal=balanceOf(c.id);return `<tr><td><b>${esc(c.name)}</b></td><td class="num">${esc(c.phone||'—')}</td>
+    <td class="num">${esc(c.plate||'—')}</td><td>${esc(c.car||'—')}</td>
+    <td class="num" style="font-weight:700;color:${bal>0?'var(--red)':bal<0?'var(--yellow)':'var(--muted)'}">${bal!==0?fmt(Math.abs(bal)):'—'} ${bal>0?'بدهکار':bal<0?'بستانکار':''}</td>
+    <td><button class="btn btn-y btn-sm" data-inv-for="${c.id}">فاکتور</button>
+    <button class="btn btn-ghost btn-sm" data-edit-cust="${c.id}">ویرایش</button>
+    <button class="btn btn-danger btn-sm" data-del-cust="${c.id}">حذف</button></td></tr>`}).join('')}</tbody></table>`):emptyBox(q?'موردی مطابق جستجو پیدا نشد':'هنوز مشتری ثبت نشده')}
+  </div>`;
+  const si=$('#custSearch');
+  si.oninput=()=>{const v=si.value;renderCustomers(v);const n=$('#custSearch');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
+  $('#addCust').onclick=()=>openCustomerModal();
+  $$('#page-customers [data-edit-cust]').forEach(el=>el.onclick=()=>openCustomerModal(db.customers.find(c=>c.id===el.dataset.editCust)));
+  $$('#page-customers [data-del-cust]').forEach(el=>el.onclick=()=>confirmBox('این مشتری حذف شود؟',()=>{
+    db.customers=db.customers.filter(c=>c.id!==el.dataset.delCust);saveDB();renderCustomers();toast('حذف شد')}));
+  $$('#page-customers [data-inv-for]').forEach(el=>el.onclick=()=>{draft.customerId=el.dataset.invFor;go('invoice')});
+}
+function openCustomerModal(c){
+  const isNew=!c;
+  openModal(isNew?'مشتری جدید':'ویرایش مشتری',`
+    <div class="field"><label>نام و نام خانوادگی *</label><input class="inp" id="cuName" value="${c?esc(c.name):''}"></div>
+    <div class="row">
+      <div class="field"><label>شماره تماس</label><input class="inp num" id="cuPhone" value="${c?esc(c.phone||''):''}"></div>
+      <div class="field"><label>پلاک خودرو</label><input class="inp num" id="cuPlate" placeholder="مثلاً 12ب345 ایران22" value="${c?esc(c.plate||''):''}"></div>
+    </div>
+    <div class="field"><label>مدل ماشین</label><input class="inp" id="cuCar" placeholder="مثلاً پژو ۲۰۶ مدل ۹۸" value="${c?esc(c.car||''):''}"></div>`,
+    `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveCust">ذخیره</button>`);
+  $('#saveCust').onclick=()=>{
+    const name=$('#cuName').value.trim();if(!name){toast('نام را وارد کنید',1);return}
+    const data={name,phone:$('#cuPhone').value.trim(),plate:$('#cuPlate').value.trim(),car:$('#cuCar').value.trim()};
+    if(isNew)db.customers.push({id:uid(),...data});else Object.assign(c,data);
+    saveDB();closeModal();renderCustomers();toast('ذخیره شد ✓');
+  };
+}
+
+/* ================= فاکتور جدید ================= */
+let draft={customerId:null};
+function renderNewInvoice(){
+  const b=$('#page-invoice .page-body');
+  const cust=draft.customerId?customer(draft.customerId):null;
+  b.innerHTML=`
+  <div class="inv-wrap">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <h2>انتخاب مشتری</h2>
+        <div class="search-box">
+          <input class="inp" id="invCustSearch" placeholder="جستجو با نام یا پلاک..." autocomplete="off">
+          <div class="drop" id="custDrop"></div>
+        </div>
+        <div id="pickedCust" style="margin-top:10px">${cust?pickedHTML(cust):'<span class="muted" style="font-size:13px">مشتری انتخاب نشده — می‌توانید «مشتری جدید» را از همان جستجو اضافه کنید.</span>'}</div>
+      </div>
+      <div class="card">
+        <h2>خدمات و محصولات <small>تیک بزنید، تعداد و قیمت را تنظیم کنید</small></h2>
+        <div id="invLines"></div>
+        <button class="btn btn-ghost btn-sm" id="addCustom" style="margin-top:12px">+ افزودن آیتم دلخواه</button>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <h2>اطلاعات فاکتور</h2>
+        <div class="field"><label>تاریخ</label><input class="inp num" id="invDate" type="date" value="${todayStr()}"></div>
+        <div class="row">
+          <div class="field"><label>کیلومتر امروز</label><input class="inp num" id="invOdo" type="number" min="0"></div>
+          <div class="field"><label>کیلومتر مراجعه بعدی</label><input class="inp num" id="invNextKm" type="number" min="0"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>تسویه</h2>
+        <div class="tot-row"><span>جمع کل</span><span class="v num" id="tGross">0</span></div>
+        <div class="tot-row" style="align-items:center"><span>تخفیف (تومان)</span><input class="inp num" id="invDisc" type="number" min="0" value="0" style="width:120px;text-align:center"></div>
+        <div class="tot-row grand"><span>قابل پرداخت</span><span class="v num" id="tPay">0</span></div>
+        <div class="radio-pay" style="margin:12px 0">
+          <label><input type="radio" name="pay" value="cash" checked>نقدی</label>
+          <label><input type="radio" name="pay" value="credit">نسیه (دفتری)</label>
+          <label><input type="radio" name="pay" value="cheque">چک</label>
+        </div>
+        <div class="field" id="chqInWrap" style="display:none"><label>سررسید چک مشتری *</label><input class="inp num" id="invChqDue" type="date"></div>
+        <button class="btn btn-y btn-block" id="saveInv">ثبت نهایی فاکتور</button>
+        <p class="muted" style="font-size:12px;margin-top:10px">با ثبت، موجودی انبار به‌صورت FIFO کسر و بهای تمام‌شده ثبت می‌شود.</p>
+      </div>
+    </div>
+  </div>`;
+  renderInvLines();
+  const si=$('#invCustSearch'),drop=$('#custDrop');
+  si.oninput=()=>{
+    const q=si.value.trim().toLowerCase();
+    if(!q){drop.classList.remove('on');return}
+    const m=db.customers.filter(c=>c.name.toLowerCase().includes(q)||String(c.phone).includes(q)||String(c.plate).toLowerCase().includes(q)).slice(0,8);
+    drop.innerHTML=(m.map(c=>`<button data-pick="${c.id}"><b>${esc(c.name)}</b> <small class="num">${esc(c.plate||'')}</small> <small>${esc(c.car||'')}</small> <small class="num muted">${esc(c.phone||'')}</small></button>`).join('')
+      +`<button data-pick-new="+">➕ ثبت مشتری جدید: «${esc(si.value.trim())}»</button>`);
+    drop.classList.add('on');
+  };
+  drop.onclick=e=>{
+    const t=e.target.closest('[data-pick]');if(!t)return;
+    if(t.dataset.pick==='+'){openCustomerModal();const last=db.customers[db.customers.length-1];
+      // پس از ذخیره، نام تایپ‌شده را پیش‌فرض بگذار
+      setTimeout(()=>{const n=$('#cuName');if(n&&!n.value)n.value=si.value.trim();const sb=$('#saveCust');if(sb){const old=sb.onclick;sb.onclick=()=>{old();if(db.customers[db.customers.length-1]!==last){draft.customerId=db.customers[db.customers.length-1].id;renderNewInvoice()}}}},50);
+    }else{draft.customerId=t.dataset.pick;renderNewInvoice()}
+  };
+  document.addEventListener('click',function h(e){if(!e.target.closest('.search-box'))drop.classList.remove('on');document.removeEventListener('click',h)});
+  $('#addCustom').onclick=()=>addCustomLine();
+  $('#invDisc').oninput=recalcInv;
+  b.querySelectorAll('input[name=pay]').forEach(r=>r.onchange=()=>{$('#chqInWrap').style.display=r.value==='cheque'&&r.checked?'block':'none'});
+  b.querySelector('#invLines').addEventListener('input',recalcInv);
+  b.querySelector('#invLines').addEventListener('change',e=>{if(e.target.classList.contains('chk')){e.target.closest('.line').classList.toggle('off',!e.target.checked);recalcInv()}});
+  $('#saveInv').onclick=saveInvoice;
+  recalcInv();
+}
+function pickedHTML(c){
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="tag tag-y" style="font-size:13px;padding:5px 14px"><b>${esc(c.name)}</b></span>
+    ${c.phone?`<span class="muted num" style="font-size:13px">📞 ${esc(c.phone)}</span>`:''}
+    ${c.plate?`<span class="tag tag-m num">${esc(c.plate)}</span>`:''}
+    ${c.car?`<span class="muted" style="font-size:13px">${esc(c.car)}</span>`:''}
+    <button class="btn btn-ghost btn-sm" id="unpick">تغییر</button></div>`;
+}
+function lineHTML(key,name,qty,price,on){
+  const st=stockOf(name),cur=currentSell(name);
+  return `<div class="line ${on?'':'off'}" data-key="${key}">
+    <input type="checkbox" class="chk" ${on?'checked':''} aria-label="فعال‌سازی ${esc(name)}">
+    <div><input class="name-inp" value="${esc(name)}" aria-label="نام آیتم"><span class="stock-hint ${st<=0?'low':''}" data-stocks>موجودی: ${fmt(st)}${cur?` — قیمت فعلی: ${fmt(cur)}`:''}</span></div>
+    <input class="qty num" type="number" min="0" step="any" value="${qty||''}" placeholder="۱" aria-label="تعداد">
+    <input class="price num" type="number" min="0" value="${price||''}" placeholder="قیمت" aria-label="قیمت واحد"></div>`;
+}
+function renderInvLines(){
+  $('#invLines').innerHTML=SERVICES.map(s=>{
+    const p=currentSell(s.name);
+    return lineHTML(s.key,s.name,1,p!=null?p:'',false);
+  }).join('');
+}
+function addCustomLine(){
+  const d=document.createElement('div');
+  d.innerHTML=lineHTML('custom-'+uid(),'',1,'',true);
+  const el=d.firstElementChild;
+  el.querySelector('.name-inp').placeholder='نام آیتم دلخواه...';
+  $('#invLines').appendChild(el);
+  el.querySelector('.name-inp').focus();
+}
+function recalcInv(){
+  let gross=0;
+  $$('#invLines .line').forEach(l=>{
+    if(!l.querySelector('.chk').checked)return;
+    const q=num(l.querySelector('.qty').value),p=num(l.querySelector('.price').value);
+    gross+=q*p;
+  });
+  const pay=Math.max(0,gross-num($('#invDisc').value));
+  $('#tGross').textContent=fmt(gross)+' تومان';
+  $('#tPay').textContent=fmt(pay)+' تومان';
+}
+function saveInvoice(){
+  const c=draft.customerId?customer(draft.customerId):null;
+  if(!c){toast('اول مشتری را انتخاب کنید',1);return}
+  const date=$('#invDate').value||todayStr();
+  const lines=[];const warn=[];
+  $$('#invLines .line').forEach(l=>{
+    if(!l.querySelector('.chk').checked)return;
+    const name=l.querySelector('.name-inp').value.trim();
+    const q=num(l.querySelector('.qty').value),p=num(l.querySelector('.price').value);
+    if(!name||q<=0||$('#priceEmpty',l))return;
+    if(p<0)return;
+    if(q<=0||name==='')return;
+    const {cost,alloc,short}=consume(name,q);
+    if(short>0)warn.push(`«${name}»: ${fmt(short)} عدد بیشتر از موجودی انبار فروخته شد (بهای تمام‌شده ثبت نشد)`);
+    lines.push({name,qty:q,unitPrice:p,cost,alloc});
+  });
+  if(!lines.length){toast('حداقل یک خدمت/محصول تیک بزنید',1);return}
+  const gross=lines.reduce((s,l)=>s+l.qty*l.unitPrice,0);
+  const discount=Math.min(num($('#invDisc').value),gross);
+  const total=gross-discount;
+  const cost=lines.reduce((s,l)=>s+l.cost,0);
+  const payType=document.querySelector('input[name=pay]:checked').value;
+  if(payType==='cheque'&&!$('#invChqDue').value){toast('سررسید چک مشتری را وارد کنید',1);return}
+  const no=++db.seq;
+  const inv={id:uid(),no,date,customerId:c.id,items:lines,discount,total,cost,payType,
+    odometer:num($('#invOdo').value)||null,nextKm:num($('#invNextKm').value)||null,createdAt:new Date().toISOString()};
+  db.invoices.push(inv);
+  if(payType==='cheque'){
+    db.cheques.push({id:uid(),direction:'in',party:c.name,amount:total,dueDate:$('#invChqDue').value,status:'open',bank:'',serial:'',invoiceId:inv.id});
+  }
+  saveDB();
+  const chqNote=payType==='cheque'?`<p class="o" style="font-size:13px;margin-top:8px">چک مشتری با سررسید ${faDate($('#invChqDue').value)} در لیست چک‌ها ثبت شد.</p>`:'';
+  openModal('فاکتور ثبت شد ✓',`
+    <p>فاکتور شماره <b class="num y">${no}</b> برای <b>${esc(c.name)}</b> به مبلغ <b class="num y" style="font-size:17px">${fmt(total)}</b> تومان (${payTag(payType)}) ثبت شد.</p>
+    ${warn.length?`<div style="background:#2A1B07;border:1px solid var(--orange);border-radius:9px;padding:10px 14px;margin-top:12px;font-size:13px;color:#FFD9A8">${warn.map(w=>'⚠ '+w).join('<br>')}</div>`:''}
+    ${chqNote}`,
+    `<button class="btn btn-ghost" data-modal-close>بستن</button><button class="btn btn-ghost" id="viewSaved">مشاهده</button><button class="btn btn-y" id="printSaved">چاپ فاکتور</button>`);
+  $('#printSaved').onclick=()=>printInvoice(inv.id);
+  $('#viewSaved').onclick=()=>viewInvoice(inv.id);
+  draft={customerId:null};
+}
+function viewInvoice(id){
+  const i=db.invoices.find(x=>x.id===id);if(!i)return;
+  const c=customer(i.customerId);
+  openModal('فاکتور شماره '+i.no,`
+    <div class="table-wrap"><table style="min-width:420px">
+    <tr><td class="muted">مشتری</td><td><b>${esc(c?c.name:'—')}</b></td></tr>
+    <tr><td class="muted">تاریخ</td><td class="num">${faDate(i.date)}</td></tr>
+    <tr><td class="muted">خودرو / پلاک</td><td>${esc(c?c.car:'')} ${esc(c?c.plate:'')}</td></tr>
+    ${i.nextKm?`<tr><td class="muted">مراجعه بعدی</td><td class="num o" style="font-weight:700">کیلومتر ${fmt(i.nextKm)}</td></tr>`:''}
+    </table></div>
+    <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>شرح</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>
+    ${i.items.map(l=>`<tr><td>${esc(l.name)}</td><td class="num">${fmt(l.qty)}</td><td class="num">${fmt(l.unitPrice)}</td><td class="num">${fmt(l.qty*l.unitPrice)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="tot-row"><span>جمع</span><span class="v num">${fmt(i.total+i.discount)}</span></div>
+    ${i.discount?`<div class="tot-row"><span>تخفیف</span><span class="v num r">${fmt(i.discount)}</span></div>`:''}
+    <div class="tot-row grand"><span>پرداختی</span><span class="v num y">${fmt(i.total)}</span></div>
+    <div style="margin-top:8px">${payTag(i.payType)}</div>`,
+    `<button class="btn btn-danger" id="delInvBtn">حذف فاکتور</button><button class="btn btn-ghost" data-modal-close>بستن</button><button class="btn btn-y" id="prInv">چاپ</button>`,true);
+  $('#prInv').onclick=()=>printInvoice(i.id);
+  $('#delInvBtn').onclick=()=>confirmBox('این فاکتور حذف شود؟ موجودی کسرشده به انبار برمی‌گردد.',()=>{
+    i.items.forEach(l=>(l.alloc||[]).forEach(a=>{const bt=db.batches.find(b=>b.id===a.batchId);if(bt)bt.qtyLeft+=a.qty}));
+    db.invoices=db.invoices.filter(x=>x.id!==i.id);
+    db.cheques=db.cheques.filter(ch=>ch.invoiceId!==i.id);
+    saveDB();closeModal();go('invoices');toast('فاکتور حذف و موجودی برگشت');
+  });
+}
+
+/* ================= آرشیو فاکتورها ================= */
+function renderInvoicesList(){
+  const list=[...db.invoices].sort((a,b)=>(b.date+b.no).localeCompare(a.date+a.no));
+  $('#page-invoices .page-body').innerHTML=`
+  <div class="card"><h2>آرشیو فاکتورها <small>${list.length} فقره</small></h2>
+  ${list.length?tableWrap(`<table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>خودرو/پلاک</th><th>مبلغ</th><th>سود</th><th>نوع</th><th></th></tr></thead><tbody>
+  ${list.map(i=>{const c=customer(i.customerId);const prof=i.total-i.cost;return `<tr>
+    <td class="num">${i.no}</td><td class="num">${faDate(i.date)}</td>
+    <td><b>${esc(c?c.name:'—')}</b></td><td class="muted">${esc(c?c.car:'')} <span class="num">${esc(c?c.plate:'')}</span></td>
+    <td class="num" style="font-weight:700">${fmt(i.total)}</td>
+    <td class="num" style="color:${prof>=0?'var(--yellow)':'var(--red)'}">${fmt(prof)}</td>
+    <td>${payTag(i.payType)}</td>
+    <td><button class="btn btn-ghost btn-sm" data-view-inv2="${i.id}">مشاهده</button></td></tr>`}).join('')}
+  </tbody></table>`):emptyBox('هنوز فاکتوری صادر نشده')}</div>`;
+  $$('#page-invoices [data-view-inv2]').forEach(el=>el.onclick=()=>viewInvoice(el.dataset.viewInv2));
+}
+
+/* ================= چاپ فاکتور ================= */
+function printInvoice(id){
+  const i=db.invoices.find(x=>x.id===id);if(!i)return;
+  const c=customer(i.customerId);
+  $('#printArea').innerHTML=`
+  <div class="pi-head">
+    <div class="shop">تعویض روغنی و آپاراتی شهسواری
+      <small>میدان ابوالفضل، ابتدای بلوار خیرآباد، نبش بن‌بست صدوقی — ۰۹۱۳۷۲۳۶۶۹۳</small></div>
+    <div style="width:130px">${logoFull(130).replace('<rect x="4" y="4" width="392" height="202" rx="18" fill="#141412" stroke="#2e2d28"/>','')}</div>
+    <div class="pi-title">فاکتور فروش</div>
+  </div>
+  <div class="pi-meta">
+    <div>شماره فاکتور: <b class="num">${i.no}</b></div>
+    <div>تاریخ: <b>${faDate(i.date)}</b></div>
+    <div>مشتری: <b>${esc(c?c.name:'—')}</b></div>
+    <div>تلفن: <b class="num">${esc(c?c.phone:'—')}</b></div>
+    <div>خودرو: <b>${esc(c?c.car:'—')}</b></div>
+    <div>پلاک: <b class="num">${esc(c?c.plate:'—')}</b></div>
+    ${i.odometer?`<div>کیلومتر امروز: <b class="num">${fmt(i.odometer)}</b></div>`:''}
+    ${i.nextKm?`<div>مراجعه بعدی: <b class="num">کیلومتر ${fmt(i.nextKm)}</b></div>`:''}
+  </div>
+  <table class="pi-table"><thead><tr><th>#</th><th>شرح خدمات / محصولات</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead>
+  <tbody>${i.items.map((l,n)=>`<tr><td class="num">${n+1}</td><td>${esc(l.name)}</td><td class="num">${fmt(l.qty)}</td><td class="num">${fmt(l.unitPrice)}</td><td class="num">${fmt(l.qty*l.unitPrice)}</td></tr>`).join('')}</tbody></table>
+  <div class="pi-tot">
+    <div><span>جمع کل</span><b class="num">${fmt(i.total+i.discount)}</b></div>
+    ${i.discount?`<div><span>تخفیف</span><b class="num">${fmt(i.discount)}</b></div>`:''}
+    <div class="g"><span>قابل پرداخت</span><span class="num">${fmt(i.total)} تومان</span></div>
+    <div><span>نحوه پرداخت</span><b>${i.payType==='cash'?'نقدی':i.payType==='credit'?'نسیه (دفتری)':'چک'}</b></div>
+  </div>
+  ${i.nextKm?`<div class="pi-note">🔔 دفعه بعد در <b>کیلومتر ${fmt(i.nextKm)}</b> برای سرویس بعدی مراجعه کنید.</div>`:''}
+  <div class="pi-foot"><span>با تشکر از اعتماد شما 🌹</span><span>امضای فروشگاه</span></div>`;
+  window.print();
+}
+
+/* ================= حساب دفتری ================= */
+function balanceOf(cid){
+  const debt=db.invoices.filter(i=>i.customerId===cid&&i.payType==='credit').reduce((s,i)=>s+i.total,0);
+  const paid=db.payments.filter(p=>p.customerId===cid).reduce((s,p)=>s+p.amount,0);
+  return debt-paid;
+}
+function renderLedger(){
+  const rows=db.customers.map(c=>({c,bal:balanceOf(c.id)})).filter(r=>r.bal!==0);
+  const debtors=rows.filter(r=>r.bal>0).reduce((s,r)=>s+r.bal,0);
+  const creditors=rows.filter(r=>r.bal<0).reduce((s,r)=>s-r.bal,0);
+  $('#page-ledger .page-body').innerHTML=`
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="stat warn"><div class="lbl">جمع بدهی مشتریان (بدهکار)</div><div class="val num">${fmt(debtors)}</div><div class="lbl">تومان</div></div>
+    <div class="stat hl"><div class="lbl">جمع اعتبار ما نزد مشتریان (بستانکار)</div><div class="val num">${fmt(creditors)}</div><div class="lbl">تومان</div></div>
+  </div>
+  <div class="card"><h2>حساب‌های باز</h2>
+  ${rows.length?tableWrap(`<table><thead><tr><th>مشتری</th><th>تلفن</th><th>پلاک</th><th>مانده</th><th>وضعیت</th><th></th></tr></thead><tbody>
+  ${rows.map(({c,bal})=>`<tr><td><b>${esc(c.name)}</b></td><td class="num">${esc(c.phone||'—')}</td><td class="num">${esc(c.plate||'—')}</td>
+    <td class="num" style="font-weight:800">${fmt(Math.abs(bal))}</td>
+    <td>${bal>0?'<span class="tag tag-r">بدهکار</span>':'<span class="tag tag-y">بستانکار</span>'}</td>
+    <td><button class="btn btn-y btn-sm" data-settle="${c.id}">تسویه / دریافت</button>
+    <button class="btn btn-ghost btn-sm" data-ledger-detail="${c.id}">ریز حساب</button></td></tr>`).join('')}
+  </tbody></table>`):emptyBox('همه حساب‌ها تسویه است 👌')}
+  </div>`;
+  $$('#page-ledger [data-settle]').forEach(el=>el.onclick=()=>openSettleModal(el.dataset.settle));
+  $$('#page-ledger [data-ledger-detail]').forEach(el=>el.onclick=()=>showLedgerDetail(el.dataset.ledgerDetail));
+}
+function openSettleModal(cid){
+  const c=customer(cid);const bal=balanceOf(cid);
+  openModal('تسویه حساب — '+esc(c.name),`
+    <p style="margin-bottom:12px;font-size:14px">مانده فعلی: <b class="num ${bal>0?'r':'y'}" style="font-size:17px">${fmt(Math.abs(bal))}</b> تومان ${bal>0?'بدهی مشتری':'اعتبار مشتری'}</p>
+    <div class="field"><label>مبلغ دریافت/پرداخت (تومان) *</label><input class="inp num" id="stAmt" type="number" min="0" value="${bal>0?bal:''}"></div>
+    <div class="field"><label>تاریخ</label><input class="inp num" id="stDate" type="date" value="${todayStr()}"></div>
+    <div class="field"><label>توضیح</label><input class="inp" id="stNote" placeholder="مثلاً تسویه کامل فاکتور ۱۰۰۲"></div>
+    <p class="muted" style="font-size:12.5px">مبلغ مثبت = پرداخت مشتری (کاهش بدهی). برای برگشت وجه به مشتری، مبلغ را منفی وارد کنید.</p>`,
+    `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveSt">ثبت</button>`);
+  $('#saveSt').onclick=()=>{
+    const amt=num($('#stAmt').value);if(amt<=0){toast('مبلغ را وارد کنید',1);return}
+    db.payments.push({id:uid(),customerId:cid,amount:amt,date:$('#stDate').value||todayStr(),note:$('#stNote').value.trim()});
+    saveDB();closeModal();renderLedger();toast('تسویه ثبت شد ✓');
+  };
+}
+function showLedgerDetail(cid){
+  const c=customer(cid);
+  const invs=db.invoices.filter(i=>i.customerId===cid);
+  const pays=db.payments.filter(p=>p.customerId===cid);
+  const rows=[
+    ...invs.map(i=>({date:i.date,desc:`فاکتور ${i.no}${i.payType==='credit'?' — نسیه':''}`,amt:i.payType==='credit'?i.total:0,sign:+1})),
+    ...pays.map(p=>({date:p.date,desc:'دریافت/تسویه'+(p.note?' — '+p.note:''),amt:p.amount,sign:-1}))
+  ].sort((a,b)=>a.date.localeCompare(b.date));
+  openModal('ریز حساب — '+esc(c.name),`
+    ${rows.length?`<div class="table-wrap"><table><thead><tr><th>تاریخ</th><th>شرح</th><th>بدهی</th><th>پرداخت</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td class="num">${faDate(r.date)}</td><td>${esc(r.desc)}</td><td class="num" style="color:${r.sign>0?'var(--red)':'var(--muted)'}">${r.sign>0?fmt(r.amt):'—'}</td><td class="num y">${r.sign<0?fmt(r.amt):'—'}</td></tr>`).join('')}
+    </tbody></table></div>`:'<p class="muted">گردشی ثبت نشده.</p>'}
+    <div class="tot-row grand" style="margin-top:10px"><span>مانده نهایی</span><span class="v num">${fmt(Math.abs(balanceOf(cid)))} ${balanceOf(cid)>0?'بدهکار':'بستانکار'}</span></div>`,
+    `<button class="btn btn-y" data-modal-close>بستن</button>`,true);
+}
+
+/* ================= گزارش فروش ================= */
+function renderReport(){
+  const t=new Date();const iso=todayStr();
+  const weekStart=new Date(t);weekStart.setDate(t.getDate()-6);
+  const monthStart=iso.slice(0,8)+'01';
+  const w=weekStart.getFullYear()+'-'+String(weekStart.getMonth()+1).padStart(2,'0')+'-'+String(weekStart.getDate()).padStart(2,'0');
+  $('#page-report .page-body').innerHTML=`
+  <div class="tabs" id="repTabs">
+    <button class="tab on" data-range="today">امروز</button>
+    <button class="tab" data-range="week">۷ روز اخیر</button>
+    <button class="tab" data-range="month">این ماه</button>
+    <button class="tab" data-range="prev">ماه قبل</button>
+    <button class="tab" data-range="all">همه</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="row" style="align-items:flex-end">
+      <div class="field" style="margin:0"><label>از تاریخ</label><input class="inp num" id="repFrom" type="date"></div>
+      <div class="field" style="margin:0"><label>تا تاریخ</label><input class="inp num" id="repTo" type="date" value="${iso}"></div>
+      <button class="btn btn-y" id="repApply">اعمال</button>
+    </div>
+  </div>
+  <div id="repOut"></div>`;
+  let range={from:iso,to:iso};
+  const setRange=(f,to)=>{range={from:f,to};$('#repFrom').value=f;$('#repTo').value=to;draw()};
+  const draw=()=>{$('#repOut').innerHTML=reportHTML(range.from,range.to)};
+  $('#repTabs').onclick=e=>{
+    const b=e.target.closest('.tab');if(!b)return;
+    $$('#repTabs .tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const r=b.dataset.range;
+    if(r==='today')setRange(iso,iso);
+    else if(r==='week')setRange(w,iso);
+    else if(r==='month')setRange(monthStart,iso);
+    else if(r==='prev'){
+      const y=t.getMonth()===0?t.getFullYear()-1:t.getFullYear(),m=t.getMonth()===0?12:t.getMonth();
+      const last=new Date(y,m,0).getDate();
+      setRange(y+'-'+String(m).padStart(2,'0')+'-01',y+'-'+String(m).padStart(2,'0')+'-'+last);
+    }
+    else setRange('2000-01-01','2099-12-31');
+  };
+  $('#repApply').onclick=()=>{range={from:$('#repFrom').value||'2000-01-01',to:$('#repTo').value||'2099-12-31'};draw()};
+  draw();
+}
+function reportHTML(from,to){
+  const invs=db.invoices.filter(i=>i.date>=from&&i.date<=to);
+  const rev=invs.reduce((s,i)=>s+i.total,0);
+  const cost=invs.reduce((s,i)=>s+i.cost,0);
+  const cash=invs.filter(i=>i.payType==='cash').reduce((s,i)=>s+i.total,0);
+  const crd=invs.filter(i=>i.payType==='credit').reduce((s,i)=>s+i.total,0);
+  const chq=invs.filter(i=>i.payType==='cheque').reduce((s,i)=>s+i.total,0);
+  const disc=invs.reduce((s,i)=>s+i.discount,0);
+  const profit=rev-cost;
+  const byProd={};
+  invs.forEach(i=>i.items.forEach(l=>{const k=l.name;byProd[k]=byProd[k]||{qty:0,sale:0};byProd[k].qty+=l.qty;byProd[k].sale+=l.qty*l.unitPrice}));
+  const prods=Object.entries(byProd).sort((a,b)=>b[1].sale-a[1].sale);
+  return `
+  <div class="grid g4">
+    <div class="stat hl"><div class="lbl">فروش کل</div><div class="val num">${fmt(rev)}</div><div class="lbl">تومان</div></div>
+    <div class="stat"><div class="lbl">نقدی</div><div class="val num">${fmt(cash)}</div></div>
+    <div class="stat"><div class="lbl">نسیه</div><div class="val num">${fmt(crd)}</div></div>
+    <div class="stat"><div class="lbl">چک</div><div class="val num">${fmt(chq)}</div></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="stat"><div class="lbl">تعداد فاکتور</div><div class="val num">${invs.length}</div></div>
+    <div class="stat"><div class="lbl">تخفیف داده‌شده</div><div class="val num">${fmt(disc)}</div></div>
+    <div class="stat" style="border-color:${profit>=0?'var(--yellow)':'var(--red)'}"><div class="lbl">سود / زیان</div>
+      <div class="val num" style="color:${profit>=0?'var(--yellow)':'var(--red)'}">${fmt(profit)}</div>
+      <div class="lbl">${profit>=0?'سود (فروش − بهای تمام‌شده)':'زیان'}</div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>فروش به تفکیک محصول/خدمت</h2>
+  ${prods.length?tableWrap(`<table><thead><tr><th>شرح</th><th>تعداد فروش</th><th>فروش (تومان)</th></tr></thead><tbody>
+  ${prods.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${fmt(v.qty)}</td><td class="num y" style="font-weight:700">${fmt(v.sale)}</td></tr>`).join('')}
+  </tbody></table>`):emptyBox('در این بازه فروشی ثبت نشده')}</div>
+  ${invs.length?`<div class="card"><h2>فاکتورهای این بازه</h2>${tableWrap(`<table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>مبلغ</th><th>سود</th><th>نوع</th></tr></thead><tbody>
+  ${[...invs].reverse().map(i=>{const c=customer(i.customerId);return `<tr><td class="num">${i.no}</td><td class="num">${faDate(i.date)}</td><td>${esc(c?c.name:'—')}</td>
+  <td class="num">${fmt(i.total)}</td><td class="num" style="color:${i.total-i.cost>=0?'var(--yellow)':'var(--red)'}">${fmt(i.total-i.cost)}</td><td>${payTag(i.payType)}</td></tr>`}).join('')}
+  </tbody></table>`)}</div>`:''}`;
+}
+
+/* ================= تنظیمات ================= */
+function renderSettings(){
+  const notifOn=db.settings.notif&&'Notification'in window&&Notification.permission==='granted';
+  $('#page-settings .page-body').innerHTML=`
+  <div class="grid g2">
+    <div class="card"><h2>🔐 تغییر رمز ورود</h2>
+      <div class="field"><label>رمز فعلی</label><input class="inp num" id="pinOld" type="password" maxlength="4" inputmode="numeric"></div>
+      <div class="row">
+        <div class="field"><label>رمز جدید (۴ رقم)</label><input class="inp num" id="pinNew" type="password" maxlength="4" inputmode="numeric"></div>
+        <div class="field"><label>تکرار رمز جدید</label><input class="inp num" id="pinNew2" type="password" maxlength="4" inputmode="numeric"></div>
+      </div>
+      <button class="btn btn-y" id="savePin">تغییر رمز</button>
+    </div>
+    <div class="card"><h2>🔔 یادآوری چک</h2>
+      <p class="muted" style="font-size:13.5px;margin-bottom:12px">برای اینکه الارم «فردا چک دارم» به‌صورت اعلان سیستم هم نمایش داده شود، اجازه اعلان را بدهید. (اعلان فقط وقتی اپ باز است کار می‌کند.)</p>
+      <p style="font-size:13.5px;margin-bottom:12px">وضعیت: <b class="${notifOn?'y':''}">${notifOn?'فعال ✓':'غیرفعال'}</b></p>
+      <button class="btn ${notifOn?'btn-ghost':'btn-y'}" id="notifBtn">${notifOn?'اعلان‌ها فعال است':'فعال‌سازی اعلان‌ها'}</button>
+    </div>
+    <div class="card"><h2>💾 پشتیبان‌گیری و بازیابی</h2>
+      <p class="muted" style="font-size:13.5px;margin-bottom:12px">داده‌ها فقط در همین مرورگر ذخیره می‌شوند. هر از گاهی فایل پشتیبان بگیرید و در جای امن نگه دارید. با فایل پشتیبان می‌توانید داده‌ها را به دستگاه دیگر منتقل کنید.</p>
+      <div class="row">
+        <button class="btn btn-y" id="backupBtn">دانلود فایل پشتیبان</button>
+        <button class="btn btn-ghost" id="restoreBtn">بازیابی از فایل</button>
+        <input type="file" id="restoreFile" accept=".json" style="display:none">
+      </div>
+    </div>
+    <div class="card"><h2>📌 مشخصات فروشگاه</h2>
+      <p style="font-size:14px;line-height:2">
+      <b>تعویض روغنی و آپاراتی شهسواری</b><br>
+      میدان ابوالفضل، ابتدای بلوار خیرآباد، نبش بن‌بست صدوقی<br>
+      تلفن: <span class="num">۰۹۱۳۷۲۳۶۶۹۳</span></p>
+      <hr style="border:none;border-top:1px solid var(--line-soft);margin:12px 0">
+      <button class="btn btn-danger" id="resetBtn">پاک کردن همه‌ی داده‌ها</button>
+      <p class="muted" style="font-size:12px;margin-top:8px">قبل از این کار حتماً پشتیبان بگیرید!</p>
+    </div>
+  </div>`;
+  $('#savePin').onclick=()=>{
+    const o=$('#pinOld').value,n=$('#pinNew').value,n2=$('#pinNew2').value;
+    if(o!==db.pin){toast('رمز فعلی اشتباه است',1);return}
+    if(!/^\d{4}$/.test(n)){toast('رمز جدید باید ۴ رقم باشد',1);return}
+    if(n!==n2){toast('تکرار رمز مطابقت ندارد',1);return}
+    db.pin=n;saveDB();toast('رمز تغییر کرد ✓');renderSettings();
+  };
+  $('#notifBtn').onclick=async()=>{
+    if(!('Notification'in window)){toast('مرورگر شما اعلان پشتیبانی نمی‌کند',1);return}
+    const p=await Notification.requestPermission();
+    db.settings.notif=p==='granted';saveDB();renderSettings();
+    if(p==='granted')toast('اعلان‌ها فعال شد ✓');
+  };
+  $('#backupBtn').onclick=()=>{
+    const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='shahsavari-backup-'+todayStr()+'.json';a.click();URL.revokeObjectURL(a.href);
+    toast('فایل پشتیبان دانلود شد ✓');
+  };
+  $('#restoreBtn').onclick=()=>$('#restoreFile').click();
+  $('#restoreFile').onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const d=JSON.parse(r.result);
+        if(!d||d.pin===undefined||!Array.isArray(d.invoices))throw 0;
+        confirmBox('تمام داده‌های فعلی با فایل پشتیبان جایگزین می‌شود. مطمئنید؟',()=>{
+          db=d;saveDB();sessionStorage.removeItem(AUTH_KEY);location.reload();
+        });
+      }catch(err){toast('فایل پشتیبان معتبر نیست',1)}
+    };
+    r.readAsText(f);
+  };
+  $('#resetBtn').onclick=()=>confirmBox('همه‌ی انبار، فاکتورها، مشتریان و چک‌ها برای همیشه پاک می‌شود. ادامه می‌دهید؟',()=>{
+    db={pin:db.pin,seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],settings:{}};
+    saveDB();toast('همه داده‌ها پاک شد');go('dashboard');
+  });
+}
+
+/* ---------- راه‌اندازی ---------- */
+document.addEventListener('DOMContentLoaded',()=>{
+  initLogin();
+  $('#headLogo').innerHTML=logoMark();
+  if(sessionStorage.getItem(AUTH_KEY)==='1')showApp();
+});
+</script>
+</body>
+</html>
