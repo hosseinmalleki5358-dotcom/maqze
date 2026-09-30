@@ -16,7 +16,7 @@
   --yellow:#FFC400; --yellow-ink:#1A1602;
   --orange:#FF8A00; --red:#E23B2E;
   --r:14px; --r-sm:9px; --pill:999px;
-  --sp:4px; --f:'Vazirmatn',system-ui,-apple-system,sans-serif;
+  --f:'Vazirmatn',system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -135,18 +135,40 @@ tr:hover td{background:rgba(255,196,0,.03)}
 .tab{border:1px solid var(--line);border-radius:var(--pill);padding:7px 16px;font-size:13px;color:var(--muted);font-weight:600;transition:.2s}
 .tab.on{background:var(--yellow);color:var(--yellow-ink);border-color:var(--yellow)}
 
+/* ================= DATE (شمسی) ================= */
+.jal{display:flex;gap:6px;align-items:center}
+.jal select{flex:none;text-align:center;padding:10px 6px}
+.jal .jy{width:82px}.jal .jm{width:96px}.jal .jd{width:64px}
+.jal .btn{flex:none;padding:8px 12px}
+
+/* ================= MONEY ================= */
+.money-words{font-size:12px;color:var(--muted);min-height:18px;margin-top:4px;font-weight:500}
+.money-words:not(:empty){color:var(--yellow)}
+
+/* ================= PLATE ================= */
+.plate{display:flex;gap:6px;align-items:center;direction:ltr}
+.plate .pa{width:56px;text-align:center}
+.plate .pl{width:74px;text-align:center;direction:rtl}
+.plate .pb{width:70px;text-align:center}
+.plate .pc{width:56px;text-align:center}
+.plate .pir{font-size:13px;font-weight:800;color:var(--muted);padding:0 4px;direction:rtl;white-space:nowrap}
+.plate-tag{display:inline-block;background:#f4f1e8;color:#111;border:1px solid #555;border-radius:6px;padding:1px 10px;font-weight:800;font-size:12.5px;direction:ltr;letter-spacing:.5px}
+
 /* ================= INVOICE BUILDER ================= */
 .inv-wrap{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
 @media(max-width:980px){.inv-wrap{grid-template-columns:1fr}}
-.line{display:grid;grid-template-columns:auto 1fr 62px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
-.line.off .name-inp,.line.off .qty,.line.off .price{opacity:.35;pointer-events:none}
+.line{display:grid;grid-template-columns:auto 1fr 62px 118px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+.line.off .pname,.line.off .qty,.line.off .price{opacity:.35;pointer-events:none}
 .line .chk{width:19px;height:19px;accent-color:var(--yellow);cursor:pointer}
-.line .name-inp{background:transparent;border:1px dashed transparent;border-radius:6px;padding:5px 8px}
+.line .pname{font-weight:600;font-size:14px}
+.line .name-inp{width:100%;background:transparent;border:1px dashed transparent;border-radius:6px;padding:5px 8px;font-weight:600}
 .line .name-inp:hover,.line .name-inp:focus{border-color:var(--line);background:var(--bg)}
 .line .qty,.line .price{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 8px;text-align:center;font-size:13.5px}
 .line .qty:focus,.line .price:focus{border-color:var(--yellow);outline:none}
-.stock-hint{font-size:11px;color:var(--muted);margin-inline-start:6px}
+.stock-hint{font-size:11px;color:var(--muted);display:block}
 .stock-hint.low{color:var(--orange)}
+.cat-h{font-size:12.5px;font-weight:800;color:var(--yellow);margin:14px 0 2px;padding-inline-start:2px;letter-spacing:.3px}
+.cat-h:first-child{margin-top:0}
 .tot-row{display:flex;justify-content:space-between;padding:7px 0;font-size:14.5px}
 .tot-row .v{font-weight:800}
 .tot-row.grand{border-top:1px solid var(--line);margin-top:8px;padding-top:12px;font-size:17px}
@@ -248,25 +270,15 @@ tr:hover td{background:rgba(255,196,0,.03)}
 <script>
 /* ============================================================
    تعویض روغنی و آپاراتی شهسواری — سیستم مدیریت فروشگاه
-   همه‌ی داده‌ها در localStorage این مرورگر ذخیره می‌شود.
+   داده‌ها در localStorage ذخیره می‌شود | تقویم: شمسی
 ============================================================ */
 'use strict';
 
 /* ---------- ثابت‌ها ---------- */
-const DB_KEY='shahsavari_db_v1', AUTH_KEY='shahsavari_auth';
-const SERVICES=[
-  {key:'oil',   name:'روغن موتور'},
-  {key:'oilf',  name:'فیلتر روغن'},
-  {key:'gear',  name:'روغن گیربکس'},
-  {key:'airf',  name:'فیلتر هوا'},
-  {key:'cabin', name:'فیلتر کابین'},
-  {key:'diff',  name:'روغن واسکازین'},
-  {key:'hyd',   name:'روغن هیدرولیک'},
-  {key:'brake', name:'روغن ترمز'},
-  {key:'rad',   name:'آب رادیاتور'},
-  {key:'anti',  name:'ضدیخ'},
-  {key:'fuel',  name:'صافی بنزین'},
-];
+const DB_KEY='shahsavari_db_v2', AUTH_KEY='shahsavari_auth';
+const CATS=['روغن موتور','فیلتر روغن','روغن گیربکس','فیلتر هوا','فیلتر کابین','روغن واسکازین','روغن هیدرولیک','روغن ترمز','آب رادیاتور','ضدیخ','صافی بنزین','سایر'];
+const JMONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const PL_LETTERS=['الف','ب','پ','ت','ث','ج','د','ز','ژ','س','ش','ص','ط','ع','ف','ق','ک','گ','ل','م','ن','و','ه','ی'];
 const PAGES={
   dashboard:'داشبورد', inventory:'انبار', suppliers:'فروشنده‌ها', cheques:'چک‌ها',
   customers:'مشتریان', invoice:'فاکتور جدید', invoices:'آرشیو فاکتورها',
@@ -285,43 +297,266 @@ const ICONS={
   settings:'<path d="M12 15a3 3 0 100-6 3 3 0 000 6zm7.4-3a7.4 7.4 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-2-1.2L14.5 3h-4l-.4 2.6a7.4 7.4 0 00-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 000 2.4l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 002 1.2l.4 2.6h4l.4-2.6a7.4 7.4 0 002-1.2l2.4 1 2-3.4-2-1.6c.06-.4.1-.8.1-1.2z"/>'
 };
 
+/* ================= تبدیل تاریخ شمسی ⇄ میلادی ================= */
+const jDiv=(a,b)=>~~(a/b);
+function jalCal(jy){
+  const breaks=[-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+  const gy=jy+621;let leapJ=-14,jp=breaks[0],jm,jump=0,march,n,i;
+  for(i=1;i<breaks.length;i+=1){jm=breaks[i];jump=jm-jp;if(jy<jm)break;leapJ=leapJ+jDiv(jump,33)*8+jDiv(jump%33,4);jp=jm}
+  n=jy-jp;
+  leapJ=leapJ+jDiv(n,33)*8+jDiv((n%33)+3,4);
+  if(jump%33===4&&jump-n===4)leapJ+=1;
+  const leapG=jDiv(gy,4)-jDiv((jDiv(gy,100)+1)*3,4)-150;
+  march=20+leapJ-leapG;
+  if(jump-n<6)n=n-jump+jDiv(jump+4,33)*33;
+  let leap=((n%33)+4)%33;
+  if(leap===-1)leap=4;
+  return{leap,gy,march};
+}
+function g2d(gy,gm,gd){
+  let d=jDiv((gy+jDiv(gm-8,6)+100100)*1461,4)+jDiv(153*((gm+9)%12)+2,5)+gd-34840408;
+  d=d-jDiv(jDiv(gy+100100+jDiv(gm-8,6),100)*3,4)+752;
+  return d;
+}
+function d2g(jdn){
+  let j=4*jdn+139361631;
+  j=j+jDiv(jDiv(4*jdn+183187720,146097)*3,4)*4-3908;
+  const i=jDiv((j%1461),4)*5+308;
+  const gd=jDiv((i%153),5)+1;
+  const gm=(jDiv(i,153)%12)+1;
+  const gy=jDiv(j,1461)-100100+jDiv(8-gm,6);
+  return{gy,gm,gd};
+}
+function j2d(jy,jm,jd){
+  const r=jalCal(jy);
+  return g2d(r.gy,3,r.march)+(jm-1)*31-jDiv(jm,7)*(jm-7)+jd-1;
+}
+function d2j(jdn){
+  const gy=d2g(jdn).gy;let jy=gy-621;
+  const r=jalCal(jy),jdn1f=g2d(gy,3,r.march);
+  let k=jdn-jdn1f,jm,jd;
+  if(k>=0){if(k<=185){jm=1+jDiv(k,31);jd=(k%31)+1;return{jy,jm,jd}}else k-=186}
+  else{jy-=1;k+=179;if(r.leap===1)k+=1}
+  jm=7+jDiv(k,30);jd=(k%30)+1;
+  return{jy,jm,jd};
+}
+function toJal(iso){const p=String(iso).split('-');return d2j(g2d(+p[0],+p[1],+p[2]))}
+function toIso(jy,jm,jd){const g=d2g(j2d(jy,jm,jd));return g.gy+'-'+String(g.gm).padStart(2,'0')+'-'+String(g.gd).padStart(2,'0')}
+function jMonthLen(jy,jm){if(jm<=6)return 31;if(jm<=11)return 30;return jalCal(jy).leap===1?30:29}
+const p2=n=>String(n).padStart(2,'0');
+function faDate(iso){if(!iso)return '—';try{const j=toJal(iso);return j.jy+'/'+p2(j.jm)+'/'+p2(j.jd)}catch(e){return iso}}
+
+/* کامپوننت انتخاب تاریخ شمسی */
+function jalSelects(id,iso){
+  const j=iso?toJal(iso):toJal(todayStr());
+  const cj=toJal(todayStr());
+  let years='';for(let y=cj.jy+2;y>=cj.jy-8;y--)years+=`<option value="${y}" ${y===j.jy?'selected':''}>${y}</option>`;
+  let months='';JMONTHS.forEach((m,i)=>months+=`<option value="${i+1}" ${i+1===j.jm?'selected':''}>${m}</option>`);
+  let days='';const dl=jMonthLen(j.jy,j.jm);for(let d=1;d<=dl;d++)days+=`<option value="${d}" ${d===j.jd?'selected':''}>${d}</option>`;
+  return `<div class="jal" id="${id}">
+    <select class="inp jy" data-p="y">${years}</select>
+    <select class="inp jm" data-p="m">${months}</select>
+    <select class="inp jd" data-p="d">${days}</select>
+    <button type="button" class="btn btn-ghost btn-sm" data-jal-today="${id}">امروز</button>
+  </div>`;
+}
+function jalFixDays(id){
+  const w=document.getElementById(id);if(!w)return;
+  const y=+w.querySelector('.jy').value,m=+w.querySelector('.jm').value,dSel=w.querySelector('.jd');
+  const keep=+dSel.value||1,dl=jMonthLen(y,m);
+  let h='';for(let d=1;d<=dl;d++)h+=`<option value="${d}" ${d===keep?'selected':''}>${d}</option>`;
+  dSel.innerHTML=h;
+}
+function jalGet(id){
+  const w=document.getElementById(id);if(!w)return '';
+  const y=+w.querySelector('.jy').value,m=+w.querySelector('.jm').value,d=+w.querySelector('.jd').value;
+  if(!y||!m||!d)return '';
+  return toIso(y,m,d);
+}
+function jalSet(id,iso){
+  const w=document.getElementById(id);if(!w)return;
+  const j=toJal(iso);
+  w.querySelector('.jy').value=j.jy;w.querySelector('.jm').value=j.jm;w.querySelector('.jd').value=j.jd;
+  jalFixDays(id);
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-jal-today]');
+  if(b){
+    const id=b.dataset.jalToday,w=document.getElementById(id);
+    if(!w)return;
+    const j=toJal(todayStr());
+    w.querySelector('.jy').value=j.jy;w.querySelector('.jm').value=j.jm;w.querySelector('.jd').value=j.jd;
+    jalFixDays(id);
+  }
+});
+document.addEventListener('change',e=>{
+  const w=e.target.closest('.jal');
+  if(w&&w.id)jalFixDays(w.id);
+});
+
+/* ================= اعداد: نرمال‌سازی، جداکننده، حروف ================= */
+function normDigits(s){
+  return String(s??'')
+    .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[،,٬]/g,'');
+}
+const groupDigits=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+/* عدد به حروف فارسی */
+const _Y=['','یک','دو','سه','چهار','پنج','شش','هفت','هشت','نه','ده','یازده','دوازده','سیزده','چهارده','پانزده','شانزده','هفده','هجده','نوزده'];
+const _D=['','ده','بیست','سی','چهل','پنجاه','شصت','هفتاد','هشتاد','نود'];
+const _S=['','صد','دویست','سیصد','چهارصد','پانصد','ششصد','هفتصد','هشتصد','نهصد'];
+const _SC=['','هزار','میلیون','میلیارد','هزار میلیارد','میلیون میلیارد'];
+function _three(n){
+  const parts=[];
+  const s=Math.floor(n/100),r=n%100;
+  if(s)parts.push(_S[s]);
+  if(r){if(r<20)parts.push(_Y[r]);else{const d=Math.floor(r/10),y=r%10;parts.push(_D[d]+(y?' و '+_Y[y]:''))}}
+  return parts.join(' و ');
+}
+function num2fa(n){
+  n=Math.round(+n||0);
+  if(n===0)return 'صفر';
+  if(n<0)return 'منفی '+num2fa(-n);
+  const groups=[];let x=n;
+  while(x>0){groups.push(x%1000);x=Math.floor(x/1000)}
+  const out=[];
+  for(let i=groups.length-1;i>=0;i--){
+    if(!groups[i])continue;
+    out.push(_three(groups[i])+(_SC[i]?' '+_SC[i]:''));
+  }
+  return out.join(' و ');
+}
+/* فیلد پول: تایپ با جداکننده + معادل حروفی */
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(!el.classList)return;
+  if(el.classList.contains('money')){
+    const pos=el.selectionStart??el.value.length;
+    const before=normDigits(el.value.slice(0,pos)).replace(/\D/g,'');
+    let raw=normDigits(el.value).replace(/\D/g,'').replace(/^0+(?=\d)/,'');
+    el.dataset.raw=raw;
+    el.value=raw?groupDigits(raw):'';
+    let cnt=0,idx=0;
+    while(idx<el.value.length&&cnt<before.length){if(/\d/.test(el.value[idx]))cnt++;idx++}
+    try{el.setSelectionRange(idx,idx)}catch(_){}
+    const w=el.dataset.words?document.getElementById(el.dataset.words):null;
+    if(w)w.textContent=raw?num2fa(+raw)+' تومان':'';
+  }else if(el.classList.contains('fa-num')){
+    const v=normDigits(el.value).replace(/[^\d.]/g,'');
+    if(v!==el.value)el.value=v;
+  }
+});
+const moneyVal=id=>parseInt((document.getElementById(id)?.dataset.raw)||'0',10)||0;
+function moneyField(id,val,ph){
+  const raw=val?String(Math.round(+val)):'';
+  return `<input class="inp num money" id="${id}" data-raw="${raw}" data-words="${id}-w" value="${raw?groupDigits(raw):''}" inputmode="numeric" placeholder="${ph||''}" autocomplete="off">
+  <div class="money-words" id="${id}-w">${raw?num2fa(+raw)+' تومان':''}</div>`;
+}
+
 /* ---------- وضعیت ---------- */
 let db=loadDB();
 let pinBuf='';
 
 function loadDB(){
   try{
-    const raw=localStorage.getItem(DB_KEY);
-    if(raw){const d=JSON.parse(raw); if(d&&d.pin!==undefined) return d;}
+    const raw=localStorage.getItem(DB_KEY)||localStorage.getItem('shahsavari_db_v1');
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d&&d.pin!==undefined){
+        if(!Array.isArray(d.products)){ /* مهاجرت از نسخه ۱ */
+          d.products=[];
+          (d.batches||[]).forEach(b=>{
+            const name=b.product||'';
+            if(name&&!d.products.some(p=>p.name===name))
+              d.products.push({id:uid(),name,cat:guessCat(name)});
+          });
+        }
+        return d;
+      }
+    }
   }catch(e){}
-  return {pin:'1234',seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],settings:{}};
+  return {pin:'1234',seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],products:[],settings:{}};
 }
-function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db))}
+function saveDB(){localStorage.removeItem('shahsavari_db_v1');localStorage.setItem(DB_KEY,JSON.stringify(db))}
+function guessCat(n){return CATS.find(c=>n&&n.includes(c))||'سایر'}
+function ensureProduct(cat,name){
+  if(!name)return;
+  let p=db.products.find(x=>x.name===name);
+  if(!p)db.products.push({id:uid(),name,cat:cat||guessCat(name)});
+  else if(cat&&p.cat!==cat)p.cat=cat;
+}
 
 /* ---------- ابزار ---------- */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=v=>parseFloat(v)||0;
-const fmt=n=>Math.round(num(n)).toLocaleString('en-US');
+const fmt=n=>groupDigits(String(Math.round(num(n))));
 const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-const faDate=iso=>{try{return new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'long',day:'numeric'}).format(new Date(iso+'T00:00:00'))}catch(e){return iso}};
 const daysDiff=iso=>{const a=new Date(iso+'T00:00:00'),b=new Date(todayStr()+'T00:00:00');return Math.round((a-b)/864e5)};
 function toast(msg,err){const t=document.createElement('div');t.className='toast'+(err?' err':'');t.textContent=msg;$('#toastRoot').appendChild(t);setTimeout(()=>t.remove(),3200)}
 function supplierName(id){const s=db.suppliers.find(x=>x.id===id);return s?s.name:'—'}
 function customer(id){return db.customers.find(c=>c.id===id)}
-function currentSell(name){ // قیمت فروش فعلی = آخرین بچ خرید این محصول
+function currentSell(name){
   const bs=db.batches.filter(b=>b.product===name).sort((a,b)=>(b.date+a.id).localeCompare(a.date+b.id));
   return bs.length?bs[0].sellPrice:null;
 }
 function stockOf(name){return db.batches.filter(b=>b.product===name).reduce((s,b)=>s+b.qtyLeft,0)}
-/* کسر FIFO از بچ‌ها — خروجی: بهای تمام‌شده و تخصیص‌ها */
 function consume(name,qty){
   let rem=qty,cost=0;const alloc=[];
   const bs=db.batches.filter(b=>b.product===name&&b.qtyLeft>0).sort((a,b)=>(a.date+a.id).localeCompare(b.date+b.id));
   for(const b of bs){if(rem<=0)break;const take=Math.min(b.qtyLeft,rem);b.qtyLeft-=take;cost+=take*b.buyPrice;alloc.push({batchId:b.id,qty:take});rem-=take}
   return{cost,alloc,short:rem};
 }
+const qtyVal=id=>num(normDigits(document.getElementById(id)?.value));
+
+/* ---------- پلاک ---------- */
+function parsePlate(s){
+  if(s&&typeof s==='object')return s;
+  if(!s)return{a:'',letter:'',b:'',c:''};
+  const str=normDigits(String(s)).trim();
+  const m=str.match(/(\d{0,2})\s*([\u0600-\u06FFa-zA-Z]+)\s*(\d{1,3})\s*ایران\s*(\d{1,2})/);
+  if(m)return{a:m[1],letter:m[2],b:m[3],c:m[4]};
+  return{a:'',letter:'',b:'',c:'',legacy:str};
+}
+function plateWidget(id,plate){
+  let a='',l='',b='',c='';
+  const p=parsePlate(plate);
+  if(p&&typeof p==='object'){a=p.a||'';l=p.letter||'';b=p.b||'';c=p.c||''}
+  const opts=PL_LETTERS.map(x=>`<option value="${x}" ${x===l?'selected':''}>${x}</option>`).join('');
+  return `<div class="plate" id="${id}">
+    <input class="inp num fa-num pa" maxlength="2" placeholder="10" value="${esc(a)}" inputmode="numeric">
+    <select class="inp pl"><option value="">—</option>${opts}</select>
+    <input class="inp num fa-num pb" maxlength="3" placeholder="345" value="${esc(b)}" inputmode="numeric">
+    <span class="pir">ایران</span>
+    <input class="inp num fa-num pc" maxlength="2" placeholder="22" value="${esc(c)}" inputmode="numeric">
+  </div>
+  ${p&&p.legacy?`<input type="hidden" id="${id}-legacy" value="${esc(p.legacy)}">`:''}
+  <p class="muted" style="font-size:11.5px;margin-top:4px">دو رقم | حرف | سه رقم | ایران | دو رقم</p>`;
+}
+function plateGet(id){
+  const w=document.getElementById(id);if(!w)return '';
+  const legacyEl=document.getElementById(id+'-legacy');
+  const p={a:w.querySelector('.pa').value.trim(),letter:w.querySelector('.pl').value,b:w.querySelector('.pb').value.trim(),c:w.querySelector('.pc').value.trim()};
+  if(!p.a&&!p.b&&!p.c&&!p.letter)return legacyEl?legacyEl.value:'';
+  return p;
+}
+function plateText(p){
+  if(!p)return '—';
+  if(typeof p==='string')return p;
+  return `${p.a||''} ${p.letter||''} ${p.b||''} ایران ${p.c||''}`.replace(/\s+/g,' ').trim()||'—';
+}
+function plateSearch(p){
+  if(!p)return '';
+  if(typeof p==='string')return normDigits(p);
+  return normDigits(`${p.a||''}${p.letter||''}${p.b||''}ایران${p.c||''} ${plateText(p)}`);
+}
+document.addEventListener('input',e=>{
+  const w=e.target.closest?.('.plate');if(!w)return;
+  if(e.target.classList.contains('pa')&&e.target.value.length>=2)w.querySelector('.pl').focus();
+  if(e.target.classList.contains('pb')&&e.target.value.length>=3)w.querySelector('.pc').focus();
+});
 
 /* ---------- لوگو (بازسازی تابلو به صورت SVG) ---------- */
 function logoFull(w){
@@ -377,10 +612,8 @@ function pressKey(k){
   if(pinBuf.length===4)setTimeout(tryPin,120);
 }
 function tryPin(){
-  if(pinBuf===db.pin){
-    sessionStorage.setItem(AUTH_KEY,'1');
-    showApp();
-  }else{
+  if(pinBuf===db.pin){sessionStorage.setItem(AUTH_KEY,'1');showApp()}
+  else{
     $('#pinDots').classList.add('err');$('#loginErr').textContent='رمز اشتباه است، دوباره تلاش کنید';
     setTimeout(()=>{pinBuf='';$('#pinDots').classList.remove('err');$$('#pinDots span').forEach(d=>d.classList.remove('on'));$('#loginErr').textContent=''},900);
   }
@@ -483,7 +716,6 @@ function chequeRow(c){
 function renderInventory(){
   const bs=[...db.batches].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id));
   const stockValue=bs.reduce((s,b)=>s+b.qtyLeft*b.buyPrice,0);
-  const prods=[...new Set([...db.batches.map(b=>b.product),...SERVICES.map(s=>s.name)])];
   $('#page-inventory .page-body').innerHTML=`
   <div class="grid g3" style="margin-bottom:16px">
     <div class="stat"><div class="lbl">تعداد بچ‌های خرید</div><div class="val num">${bs.length}</div></div>
@@ -492,12 +724,13 @@ function renderInventory(){
   </div>
   <div class="row" style="margin-bottom:16px;gap:10px">
     <button class="btn btn-y" id="addBatch">+ ثبت خرید جدید</button>
-    <span class="muted" style="font-size:13px">فروش‌ها به‌صورت FIFO از قدیمی‌ترین بچ کسر می‌شوند؛ قیمت هر بچ مستقل می‌ماند.</span>
+    <span class="muted" style="font-size:13px">هر محصول با برند/مدل خودش وارد کاتالوگ می‌شود و در فاکتور فروش با آخرین قیمت فروش پیش‌فرض می‌آید.</span>
   </div>
   <div class="card"><h2>بچ‌های خرید</h2>
-  ${bs.length?tableWrap(`<table><thead><tr><th>تاریخ</th><th>محصول</th><th>خرید / مانده</th><th>قیمت خرید</th><th>قیمت فروش</th><th>فروشنده</th><th>پرداخت</th><th></th></tr></thead><tbody>
+  ${bs.length?tableWrap(`<table><thead><tr><th>تاریخ</th><th>دسته</th><th>محصول (برند/مدل)</th><th>خرید / مانده</th><th>قیمت خرید</th><th>قیمت فروش</th><th>فروشنده</th><th>پرداخت</th><th></th></tr></thead><tbody>
   ${bs.map(b=>`<tr style="${b.qtyLeft<=0?'opacity:.45':''}">
-    <td class="num">${b.date}</td>
+    <td class="num">${faDate(b.date)}</td>
+    <td><span class="tag tag-m">${esc(b.cat||guessCat(b.product))}</span></td>
     <td><b>${esc(b.product)}</b>${b.note?`<br><small class="muted">${esc(b.note)}</small>`:''}</td>
     <td class="num">${fmt(b.qty)} / <b style="color:${b.qtyLeft>0?'var(--yellow)':'var(--red)'}">${fmt(b.qtyLeft)}</b></td>
     <td class="num">${fmt(b.buyPrice)}</td>
@@ -506,8 +739,7 @@ function renderInventory(){
     <td>${b.payCash?`نقد: <span class="num">${fmt(b.payCash)}</span>`:''} ${b.payCheque?`<br>چک: <span class="num">${fmt(b.payCheque)}</span>`:''} ${!b.payCash&&!b.payCheque?'—':''}</td>
     <td><button class="btn btn-ghost btn-sm" data-edit-batch="${b.id}">ویرایش</button> <button class="btn btn-danger btn-sm" data-del-batch="${b.id}">حذف</button></td>
   </tr>`).join('')}</tbody></table>`):emptyBox('هنوز خریدی ثبت نشده — اولین بچ را ثبت کنید')}
-  </div>
-  <datalist id="prodList">${prods.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>`;
+  </div>`;
   $('#addBatch').onclick=()=>openBatchModal();
   $$('#page-inventory [data-edit-batch]').forEach(el=>el.onclick=()=>openBatchModal(db.batches.find(x=>x.id===el.dataset.editBatch)));
   $$('#page-inventory [data-del-batch]').forEach(el=>el.onclick=()=>{
@@ -521,42 +753,49 @@ function renderInventory(){
 function openBatchModal(batch){
   const isNew=!batch;
   const supOpts=db.suppliers.map(s=>`<option value="${s.id}" ${batch&&batch.supplierId===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+  const catOpts=CATS.map(c=>`<option value="${c}" ${batch&&(batch.cat||guessCat(batch.product))===c?'selected':''}>${c}</option>`).join('');
+  const brandList=[...new Set(db.products.map(p=>p.name))].map(n=>`<option value="${esc(n)}">`).join('');
   openModal(isNew?'ثبت خرید جدید (بچ انبار)':'ویرایش بچ خرید',`
-    <div class="field"><label>نام محصول *</label><input class="inp" id="bProd" list="prodList" value="${batch?esc(batch.product):''}" placeholder="مثلاً: روغن موتور — بهران ۴۰۰۰"></div>
     <div class="row">
-      <div class="field"><label>تعداد *</label><input class="inp num" id="bQty" type="number" min="0" step="any" value="${batch?batch.qty:''}"></div>
-      <div class="field"><label>تاریخ خرید *</label><input class="inp num" id="bDate" type="date" value="${batch?batch.date:todayStr()}"></div>
+      <div class="field"><label>دسته محصول *</label><select class="inp" id="bCat">${catOpts}</select></div>
+      <div class="field"><label>برند / مدل *</label><input class="inp" id="bBrand" list="brandList" value="${batch?esc(batch.product):''}" placeholder="مثلاً: ELF 10W40 یا بهران 4000"><datalist id="brandList">${brandList}</datalist></div>
     </div>
     <div class="row">
-      <div class="field"><label>قیمت خرید (واحد، تومان) *</label><input class="inp num" id="bBuy" type="number" min="0" value="${batch?batch.buyPrice:''}"></div>
-      <div class="field"><label>قیمت فروش (واحد، تومان) *</label><input class="inp num" id="bSell" type="number" min="0" value="${batch?batch.sellPrice:''}"></div>
+      <div class="field"><label>تعداد *</label><input class="inp num fa-num" id="bQty" value="${batch?batch.qty:''}" inputmode="decimal"></div>
+      <div class="field"><label>تاریخ خرید *</label>${jalSelects('bDate',batch?batch.date:todayStr())}</div>
+    </div>
+    <div class="row">
+      <div class="field"><label>قیمت خرید (واحد، تومان) *</label>${moneyField('bBuy',batch?batch.buyPrice:'')}</div>
+      <div class="field"><label>قیمت فروش (واحد، تومان) *</label>${moneyField('bSell',batch?batch.sellPrice:'')}</div>
     </div>
     <div class="field"><label>فروشنده</label><select class="inp" id="bSup"><option value="">— انتخاب کنید —</option>${supOpts}</select></div>
     <div class="row">
-      <div class="field"><label>پرداخت نقدی (تومان)</label><input class="inp num" id="bCash" type="number" min="0" value="${batch?batch.payCash:''}"></div>
-      <div class="field"><label>پرداخت با چک (تومان)</label><input class="inp num" id="bChq" type="number" min="0" value="${batch?batch.payCheque:''}"></div>
+      <div class="field"><label>پرداخت نقدی (تومان)</label>${moneyField('bCash',batch?batch.payCash:'')}</div>
+      <div class="field"><label>پرداخت با چک (تومان)</label>${moneyField('bChq',batch?batch.payCheque:'')}</div>
     </div>
-    <div class="field" id="chqDateWrap" style="display:none"><label>تاریخ سررسید چک *</label><input class="inp num" id="bChqDate" type="date"></div>
-    <div class="field"><label>توضیحات</label><input class="inp" id="bNote" value="${batch?esc(batch.note||''):''}" placeholder="برند، ویسکوزیته، بچ و ..."></div>
-    ${isNew?'':'<p class="muted" style="font-size:12.5px">⚠ ویرایش قیمت این بچ فقط همین بچ را تغییر می‌دهد؛ بچ‌های قبلی با قیمت خودشان باقی می‌مانند.</p>'}`,
+    <div class="field" id="chqDateWrap" style="display:none"><label>تاریخ سررسید چک *</label>${jalSelects('bChqDate','')}</div>
+    <div class="field"><label>توضیحات</label><input class="inp" id="bNote" value="${batch?esc(batch.note||''):''}" placeholder="ویسکوزیته، بچ تولید، ..."></div>
+    ${isNew?'':'<p class="muted" style="font-size:12.5px">⚠ تغییر قیمت فروش این بچ، قیمت پیش‌فرض فاکتورهای بعدی همین محصول را هم به‌روز می‌کند؛ بچ‌های قدیمی با قیمت خودشان می‌مانند.</p>'}`,
     `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveBatch">ذخیره</button>`);
-  const tgl=()=>$('#chqDateWrap').style.display=num($('#bChq').value)>0?'block':'none';
-  $('#bChq').oninput=tgl;tgl();
+  const tgl=()=>$('#chqDateWrap').style.display=num(normDigits($('#bChq').value))>0?'block':'none';
+  $('#bChq').addEventListener('input',tgl);tgl();
   $('#saveBatch').onclick=()=>{
-    const prod=$('#bProd').value.trim(),qty=num($('#bQty').value),buy=num($('#bBuy').value),sell=num($('#bSell').value),date=$('#bDate').value;
-    if(!prod||qty<=0||$('#bBuy').value===''||$('#bSell').value===''||!date){toast('نام محصول، تعداد، قیمت‌ها و تاریخ را کامل کنید',1);return}
-    const chq=num($('#bChq').value);
+    const cat=$('#bCat').value,brand=$('#bBrand').value.trim(),qty=num(normDigits($('#bQty').value)),buy=moneyVal('bBuy'),sell=moneyVal('bSell'),date=jalGet('bDate');
+    if(!brand||qty<=0||buy<=0||sell<=0||!date){toast('دسته، برند/مدل، تعداد، قیمت‌ها و تاریخ را کامل کنید',1);return}
+    const chq=moneyVal('bChq');
     if(isNew){
       const id=uid();
-      db.batches.push({id,product:prod,qty,qtyLeft:qty,buyPrice:buy,sellPrice:sell,date,supplierId:$('#bSup').value||null,payCash:num($('#bCash').value),payCheque:chq,note:$('#bNote').value.trim()});
+      db.batches.push({id,cat,product:brand,qty,qtyLeft:qty,buyPrice:buy,sellPrice:sell,date,supplierId:$('#bSup').value||null,payCash:moneyVal('bCash'),payCheque:chq,note:$('#bNote').value.trim()});
       if(chq>0){
-        const d=$('#bChqDate').value;
+        const d=jalGet('bChqDate');
         if(!d){toast('تاریخ سررسید چک را وارد کنید',1);return}
         db.cheques.push({id:uid(),direction:'out',party:supplierName($('#bSup').value)||'فروشنده',amount:chq,dueDate:d,status:'open',batchId:id,bank:'',serial:''});
       }
+      ensureProduct(cat,brand);
       toast('خرید ثبت شد ✓');
     }else{
-      Object.assign(batch,{product:prod,qty,qtyLeft:Math.min(batch.qtyLeft,qty)||qty,buyPrice:buy,sellPrice:sell,date,supplierId:$('#bSup').value||null,payCash:num($('#bCash').value),payCheque:chq,note:$('#bNote').value.trim()});
+      Object.assign(batch,{cat,product:brand,qty,qtyLeft:Math.min(batch.qtyLeft,qty)||qty,buyPrice:buy,sellPrice:sell,date,supplierId:$('#bSup').value||null,payCash:moneyVal('bCash'),payCheque:chq,note:$('#bNote').value.trim()});
+      ensureProduct(cat,brand);
       toast('بچ ویرایش شد ✓');
     }
     saveDB();closeModal();renderInventory();
@@ -592,7 +831,7 @@ function openSupplierModal(s){
   const isNew=!s;
   openModal(isNew?'فروشنده جدید':'ویرایش فروشنده',`
     <div class="field"><label>نام فروشنده / فروشگاه *</label><input class="inp" id="sName" value="${s?esc(s.name):''}"></div>
-    <div class="field"><label>شماره تماس</label><input class="inp num" id="sPhone" value="${s?esc(s.phone||''):''}"></div>`,
+    <div class="field"><label>شماره تماس</label><input class="inp num fa-num" id="sPhone" value="${s?esc(s.phone||''):''}"></div>`,
     `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveSup">ذخیره</button>`);
   $('#saveSup').onclick=()=>{
     const name=$('#sName').value.trim();if(!name){toast('نام را وارد کنید',1);return}
@@ -606,11 +845,11 @@ function showSupplierDetail(id){
   const bs=db.batches.filter(x=>x.supplierId===id);
   const chqs=db.cheques.filter(c=>c.direction==='out'&&bs.some(b=>b.id===c.batchId));
   openModal('ریز صورتحساب — '+esc(s.name),`
-    ${bs.length?`<div class="table-wrap"><table><thead><tr><th>تاریخ</th><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th><th>نقد</th><th>چک</th></tr></thead><tbody>
-    ${bs.map(b=>`<tr><td class="num">${b.date}</td><td>${esc(b.product)}</td><td class="num">${fmt(b.qty)}</td><td class="num">${fmt(b.buyPrice)}</td><td class="num">${fmt(b.qty*b.buyPrice)}</td><td class="num">${fmt(b.payCash)}</td><td class="num">${fmt(b.payCheque)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">خریدی از این فروشنده ثبت نشده.</p>'}
+    ${bs.length?`<div class="table-wrap"><table><thead><tr><th>تاریخ</th><th>دسته</th><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th><th>نقد</th><th>چک</th></tr></thead><tbody>
+    ${bs.map(b=>`<tr><td class="num">${faDate(b.date)}</td><td>${esc(b.cat||guessCat(b.product))}</td><td>${esc(b.product)}</td><td class="num">${fmt(b.qty)}</td><td class="num">${fmt(b.buyPrice)}</td><td class="num">${fmt(b.qty*b.buyPrice)}</td><td class="num">${fmt(b.payCash)}</td><td class="num">${fmt(b.payCheque)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">خریدی از این فروشنده ثبت نشده.</p>'}
     ${chqs.length?`<h3 style="margin:16px 0 8px;font-size:14px">چک‌های صادره به این فروشنده</h3>
     <div class="table-wrap"><table><thead><tr><th>مبلغ</th><th>سررسید</th><th>وضعیت</th></tr></thead><tbody>
-    ${chqs.map(c=>`<tr><td class="num">${fmt(c.amount)}</td><td class="num">${c.dueDate}</td><td>${chqStatusTag(c)}</td></tr>`).join('')}</tbody></table></div>`:''}`,
+    ${chqs.map(c=>`<tr><td class="num">${fmt(c.amount)}</td><td class="num">${faDate(c.dueDate)}</td><td>${chqStatusTag(c)}</td></tr>`).join('')}</tbody></table></div>`:''}`,
     `<button class="btn btn-y" data-modal-close>بستن</button>`,true);
 }
 function chqStatusTag(c){return c.status==='open'?'<span class="tag tag-o">در جریان</span>':c.status==='cleared'?'<span class="tag tag-y">پاس شده</span>':'<span class="tag tag-r">برگشتی</span>'}
@@ -654,22 +893,21 @@ function openChequeModal(){
       <div class="field"><label>طرف حساب *</label><input class="inp" id="cParty"></div>
     </div>
     <div class="row">
-      <div class="field"><label>مبلغ (تومان) *</label><input class="inp num" id="cAmt" type="number" min="0"></div>
-      <div class="field"><label>تاریخ سررسید *</label><input class="inp num" id="cDue" type="date"></div>
+      <div class="field"><label>مبلغ (تومان) *</label>${moneyField('cAmt','')}</div>
+      <div class="field"><label>تاریخ سررسید *</label>${jalSelects('cDue','')}</div>
     </div>
     <div class="row">
       <div class="field"><label>بانک</label><input class="inp" id="cBank"></div>
-      <div class="field"><label>شماره / سریال</label><input class="inp num" id="cSerial"></div>
+      <div class="field"><label>شماره / سریال</label><input class="inp num fa-num" id="cSerial"></div>
     </div>`,
     `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveChq">ذخیره</button>`);
   $('#saveChq').onclick=()=>{
-    const party=$('#cParty').value.trim(),amt=num($('#cAmt').value),due=$('#cDue').value;
+    const party=$('#cParty').value.trim(),amt=moneyVal('cAmt'),due=jalGet('cDue');
     if(!party||amt<=0||!due){toast('طرف حساب، مبلغ و سررسید را کامل کنید',1);return}
     db.cheques.push({id:uid(),direction:$('#cDir').value,party,amount:amt,dueDate:due,status:'open',bank:$('#cBank').value.trim(),serial:$('#cSerial').value.trim()});
     saveDB();closeModal();renderCheques();checkAlarms();toast('چک ثبت شد ✓');
   };
 }
-/* الارم چک: یک روز قبل + روز سررسید */
 function checkAlarms(){
   const due=db.cheques.filter(c=>c.status==='open'&&daysDiff(c.dueDate)<=1);
   const ban=$('#alarmBanner');
@@ -689,8 +927,8 @@ setInterval(()=>{if($('#appShell').classList.contains('on'))checkAlarms()},36e5)
 function renderCustomers(q=''){
   const list=db.customers.filter(c=>{
     if(!q)return true;
-    const s=q.trim().toLowerCase();
-    return c.name.toLowerCase().includes(s)||String(c.phone).includes(s)||String(c.plate).toLowerCase().includes(s);
+    const s=normDigits(q).trim().toLowerCase();
+    return c.name.toLowerCase().includes(s)||String(c.phone||'').includes(s)||plateSearch(c.plate).includes(s);
   });
   $('#page-customers .page-body').innerHTML=`
   <div class="row" style="margin-bottom:16px;gap:10px">
@@ -700,7 +938,7 @@ function renderCustomers(q=''){
   <div class="card"><h2>مشتریان <small>${list.length} نفر</small></h2>
   ${list.length?tableWrap(`<table><thead><tr><th>نام</th><th>تلفن</th><th>پلاک</th><th>خودرو</th><th>مانده حساب</th><th></th></tr></thead><tbody>
   ${list.map(c=>{const bal=balanceOf(c.id);return `<tr><td><b>${esc(c.name)}</b></td><td class="num">${esc(c.phone||'—')}</td>
-    <td class="num">${esc(c.plate||'—')}</td><td>${esc(c.car||'—')}</td>
+    <td><span class="plate-tag num">${esc(plateText(c.plate))}</span></td><td>${esc(c.car||'—')}</td>
     <td class="num" style="font-weight:700;color:${bal>0?'var(--red)':bal<0?'var(--yellow)':'var(--muted)'}">${bal!==0?fmt(Math.abs(bal)):'—'} ${bal>0?'بدهکار':bal<0?'بستانکار':''}</td>
     <td><button class="btn btn-y btn-sm" data-inv-for="${c.id}">فاکتور</button>
     <button class="btn btn-ghost btn-sm" data-edit-cust="${c.id}">ویرایش</button>
@@ -719,14 +957,14 @@ function openCustomerModal(c){
   openModal(isNew?'مشتری جدید':'ویرایش مشتری',`
     <div class="field"><label>نام و نام خانوادگی *</label><input class="inp" id="cuName" value="${c?esc(c.name):''}"></div>
     <div class="row">
-      <div class="field"><label>شماره تماس</label><input class="inp num" id="cuPhone" value="${c?esc(c.phone||''):''}"></div>
-      <div class="field"><label>پلاک خودرو</label><input class="inp num" id="cuPlate" placeholder="مثلاً 12ب345 ایران22" value="${c?esc(c.plate||''):''}"></div>
+      <div class="field"><label>شماره تماس</label><input class="inp num fa-num" id="cuPhone" value="${c?esc(c.phone||''):''}"></div>
+      <div class="field" style="flex:2"><label>پلاک خودرو</label>${plateWidget('cuPlate',c?c.plate:'')}</div>
     </div>
     <div class="field"><label>مدل ماشین</label><input class="inp" id="cuCar" placeholder="مثلاً پژو ۲۰۶ مدل ۹۸" value="${c?esc(c.car||''):''}"></div>`,
     `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveCust">ذخیره</button>`);
   $('#saveCust').onclick=()=>{
     const name=$('#cuName').value.trim();if(!name){toast('نام را وارد کنید',1);return}
-    const data={name,phone:$('#cuPhone').value.trim(),plate:$('#cuPlate').value.trim(),car:$('#cuCar').value.trim()};
+    const data={name,phone:$('#cuPhone').value.trim(),plate:plateGet('cuPlate'),car:$('#cuCar').value.trim()};
     if(isNew)db.customers.push({id:uid(),...data});else Object.assign(c,data);
     saveDB();closeModal();renderCustomers();toast('ذخیره شد ✓');
   };
@@ -749,59 +987,69 @@ function renderNewInvoice(){
         <div id="pickedCust" style="margin-top:10px">${cust?pickedHTML(cust):'<span class="muted" style="font-size:13px">مشتری انتخاب نشده — می‌توانید «مشتری جدید» را از همان جستجو اضافه کنید.</span>'}</div>
       </div>
       <div class="card">
-        <h2>خدمات و محصولات <small>تیک بزنید، تعداد و قیمت را تنظیم کنید</small></h2>
+        <h2>محصولات و خدمات <small>تیک بزنید؛ قیمت‌ها از آخرین بچ خرید پیش‌فرض می‌آیند</small></h2>
         <div id="invLines"></div>
-        <button class="btn btn-ghost btn-sm" id="addCustom" style="margin-top:12px">+ افزودن آیتم دلخواه</button>
+        <button class="btn btn-ghost btn-sm" id="addCustom" style="margin-top:12px">+ افزودن آیتم دلخواه (خدمت/کار)</button>
       </div>
     </div>
     <div>
       <div class="card" style="margin-bottom:16px">
         <h2>اطلاعات فاکتور</h2>
-        <div class="field"><label>تاریخ</label><input class="inp num" id="invDate" type="date" value="${todayStr()}"></div>
+        <div class="field"><label>تاریخ</label>${jalSelects('invDate',todayStr())}</div>
         <div class="row">
-          <div class="field"><label>کیلومتر امروز</label><input class="inp num" id="invOdo" type="number" min="0"></div>
-          <div class="field"><label>کیلومتر مراجعه بعدی</label><input class="inp num" id="invNextKm" type="number" min="0"></div>
+          <div class="field"><label>کیلومتر امروز</label><input class="inp num fa-num" id="invOdo" inputmode="numeric"></div>
+          <div class="field"><label>کیلومتر مراجعه بعدی</label><input class="inp num fa-num" id="invNextKm" inputmode="numeric"></div>
         </div>
       </div>
       <div class="card">
         <h2>تسویه</h2>
         <div class="tot-row"><span>جمع کل</span><span class="v num" id="tGross">0</span></div>
-        <div class="tot-row" style="align-items:center"><span>تخفیف (تومان)</span><input class="inp num" id="invDisc" type="number" min="0" value="0" style="width:120px;text-align:center"></div>
+        <div class="tot-row" style="align-items:flex-start"><span style="padding-top:6px">تخفیف (تومان)</span><div style="width:150px">${moneyField('invDisc',0)}</div></div>
         <div class="tot-row grand"><span>قابل پرداخت</span><span class="v num" id="tPay">0</span></div>
         <div class="radio-pay" style="margin:12px 0">
           <label><input type="radio" name="pay" value="cash" checked>نقدی</label>
           <label><input type="radio" name="pay" value="credit">نسیه (دفتری)</label>
           <label><input type="radio" name="pay" value="cheque">چک</label>
         </div>
-        <div class="field" id="chqInWrap" style="display:none"><label>سررسید چک مشتری *</label><input class="inp num" id="invChqDue" type="date"></div>
+        <div class="field" id="chqInWrap" style="display:none"><label>سررسید چک مشتری *</label>${jalSelects('invChqDue','')}</div>
         <button class="btn btn-y btn-block" id="saveInv">ثبت نهایی فاکتور</button>
         <p class="muted" style="font-size:12px;margin-top:10px">با ثبت، موجودی انبار به‌صورت FIFO کسر و بهای تمام‌شده ثبت می‌شود.</p>
       </div>
     </div>
   </div>`;
   renderInvLines();
+  const up=$('#unpick');if(up)up.onclick=()=>{draft.customerId=null;renderNewInvoice()};
   const si=$('#invCustSearch'),drop=$('#custDrop');
   si.oninput=()=>{
-    const q=si.value.trim().toLowerCase();
+    const q=normDigits(si.value).trim().toLowerCase();
     if(!q){drop.classList.remove('on');return}
-    const m=db.customers.filter(c=>c.name.toLowerCase().includes(q)||String(c.phone).includes(q)||String(c.plate).toLowerCase().includes(q)).slice(0,8);
-    drop.innerHTML=(m.map(c=>`<button data-pick="${c.id}"><b>${esc(c.name)}</b> <small class="num">${esc(c.plate||'')}</small> <small>${esc(c.car||'')}</small> <small class="num muted">${esc(c.phone||'')}</small></button>`).join('')
-      +`<button data-pick-new="+">➕ ثبت مشتری جدید: «${esc(si.value.trim())}»</button>`);
+    const m=db.customers.filter(c=>c.name.toLowerCase().includes(q)||String(c.phone||'').includes(q)||plateSearch(c.plate).includes(q)).slice(0,8);
+    drop.innerHTML=(m.map(c=>`<button data-pick="${c.id}"><b>${esc(c.name)}</b> <small class="plate-tag num">${esc(plateText(c.plate))}</small> <small>${esc(c.car||'')}</small> <small class="num muted">${esc(c.phone||'')}</small></button>`).join('')
+      +`<button data-pick="+">➕ ثبت مشتری جدید: «${esc(si.value.trim())}»</button>`);
     drop.classList.add('on');
   };
   drop.onclick=e=>{
     const t=e.target.closest('[data-pick]');if(!t)return;
-    if(t.dataset.pick==='+'){openCustomerModal();const last=db.customers[db.customers.length-1];
-      // پس از ذخیره، نام تایپ‌شده را پیش‌فرض بگذار
-      setTimeout(()=>{const n=$('#cuName');if(n&&!n.value)n.value=si.value.trim();const sb=$('#saveCust');if(sb){const old=sb.onclick;sb.onclick=()=>{old();if(db.customers[db.customers.length-1]!==last){draft.customerId=db.customers[db.customers.length-1].id;renderNewInvoice()}}}},50);
+    if(t.dataset.pick==='+'){
+      const typed=si.value.trim();
+      openCustomerModal();
+      setTimeout(()=>{
+        const n=$('#cuName');if(n&&!n.value)n.value=typed;
+        const sb=$('#saveCust');
+        if(sb){const old=sb.onclick;sb.onclick=()=>{
+          old();
+          const last=db.customers[db.customers.length-1];
+          if(last&&last.name===typed){draft.customerId=last.id;renderNewInvoice()}
+        }}
+      },50);
     }else{draft.customerId=t.dataset.pick;renderNewInvoice()}
   };
   document.addEventListener('click',function h(e){if(!e.target.closest('.search-box'))drop.classList.remove('on');document.removeEventListener('click',h)});
   $('#addCustom').onclick=()=>addCustomLine();
-  $('#invDisc').oninput=recalcInv;
+  $('#invDisc').addEventListener('input',recalcInv);
   b.querySelectorAll('input[name=pay]').forEach(r=>r.onchange=()=>{$('#chqInWrap').style.display=r.value==='cheque'&&r.checked?'block':'none'});
-  b.querySelector('#invLines').addEventListener('input',recalcInv);
-  b.querySelector('#invLines').addEventListener('change',e=>{if(e.target.classList.contains('chk')){e.target.closest('.line').classList.toggle('off',!e.target.checked);recalcInv()}});
+  $('#invLines').addEventListener('input',recalcInv);
+  $('#invLines').addEventListener('change',e=>{if(e.target.classList.contains('chk')){e.target.closest('.line').classList.toggle('off',!e.target.checked);recalcInv()}});
   $('#saveInv').onclick=saveInvoice;
   recalcInv();
 }
@@ -809,29 +1057,49 @@ function pickedHTML(c){
   return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <span class="tag tag-y" style="font-size:13px;padding:5px 14px"><b>${esc(c.name)}</b></span>
     ${c.phone?`<span class="muted num" style="font-size:13px">📞 ${esc(c.phone)}</span>`:''}
-    ${c.plate?`<span class="tag tag-m num">${esc(c.plate)}</span>`:''}
+    ${c.plate?`<span class="plate-tag num">${esc(plateText(c.plate))}</span>`:''}
     ${c.car?`<span class="muted" style="font-size:13px">${esc(c.car)}</span>`:''}
     <button class="btn btn-ghost btn-sm" id="unpick">تغییر</button></div>`;
 }
-function lineHTML(key,name,qty,price,on){
+function lineHTML(name,qty,price,on,locked){
   const st=stockOf(name),cur=currentSell(name);
-  return `<div class="line ${on?'':'off'}" data-key="${key}">
+  const raw=price?String(Math.round(price)):'';
+  return `<div class="line ${on?'':'off'}" ${locked?`data-name="${esc(name)}"`:''}>
     <input type="checkbox" class="chk" ${on?'checked':''} aria-label="فعال‌سازی ${esc(name)}">
-    <div><input class="name-inp" value="${esc(name)}" aria-label="نام آیتم"><span class="stock-hint ${st<=0?'low':''}" data-stocks>موجودی: ${fmt(st)}${cur?` — قیمت فعلی: ${fmt(cur)}`:''}</span></div>
-    <input class="qty num" type="number" min="0" step="any" value="${qty||''}" placeholder="۱" aria-label="تعداد">
-    <input class="price num" type="number" min="0" value="${price||''}" placeholder="قیمت" aria-label="قیمت واحد"></div>`;
+    <div>${locked
+      ?`<span class="pname">${esc(name)}</span>`
+      :`<input class="name-inp" value="" placeholder="نام آیتم دلخواه..." aria-label="نام آیتم">`}
+      <span class="stock-hint ${st<=0?'low':''}">موجودی: ${fmt(st)}${cur?` — قیمت فعلی: ${fmt(cur)}`:''}</span></div>
+    <input class="qty num fa-num" value="${qty||''}" inputmode="decimal" placeholder="1" aria-label="تعداد">
+    <input class="price num money" data-raw="${raw}" data-words="" value="${raw?groupDigits(raw):''}" inputmode="numeric" placeholder="قیمت" aria-label="قیمت واحد"></div>`;
 }
 function renderInvLines(){
-  $('#invLines').innerHTML=SERVICES.map(s=>{
-    const p=currentSell(s.name);
-    return lineHTML(s.key,s.name,1,p!=null?p:'',false);
-  }).join('');
+  const box=$('#invLines');
+  if(!db.products.length){
+    box.innerHTML='<p class="muted" style="font-size:13.5px">هنوز محصولی در انبار ثبت نشده. از «انبار ← ثبت خرید جدید» محصول را با برند و قیمت فروش وارد کنید تا اینجا خودکار بیاید — یا از «آیتم دلخواه» استفاده کنید.</p>';
+    return;
+  }
+  const order=[...CATS];
+  const groups={};
+  db.products.forEach(p=>{(groups[p.cat||'سایر']=groups[p.cat||'سایر']||[]).push(p)});
+  let html='';
+  order.filter(c=>groups[c]).forEach(c=>{
+    html+=`<div class="cat-h">${esc(c)}</div>`;
+    groups[c].sort((a,b)=>a.name.localeCompare(b.name,'fa')).forEach(p=>{
+      const cur=currentSell(p.name);
+      html+=lineHTML(p.name,1,cur!=null?cur:'',false,true);
+    });
+  });
+  Object.keys(groups).filter(c=>!order.includes(c)).forEach(c=>{
+    html+=`<div class="cat-h">${esc(c)}</div>`;
+    groups[c].forEach(p=>{const cur=currentSell(p.name);html+=lineHTML(p.name,1,cur!=null?cur:'',false,true)});
+  });
+  box.innerHTML=html;
 }
 function addCustomLine(){
   const d=document.createElement('div');
-  d.innerHTML=lineHTML('custom-'+uid(),'',1,'',true);
+  d.innerHTML=lineHTML('',1,'',true,false);
   const el=d.firstElementChild;
-  el.querySelector('.name-inp').placeholder='نام آیتم دلخواه...';
   $('#invLines').appendChild(el);
   el.querySelector('.name-inp').focus();
 }
@@ -839,45 +1107,46 @@ function recalcInv(){
   let gross=0;
   $$('#invLines .line').forEach(l=>{
     if(!l.querySelector('.chk').checked)return;
-    const q=num(l.querySelector('.qty').value),p=num(l.querySelector('.price').value);
+    const q=num(normDigits(l.querySelector('.qty').value));
+    const p=parseInt(l.querySelector('.price').dataset.raw||'0',10)||0;
     gross+=q*p;
   });
-  const pay=Math.max(0,gross-num($('#invDisc').value));
+  const pay=Math.max(0,gross-moneyVal('invDisc'));
   $('#tGross').textContent=fmt(gross)+' تومان';
   $('#tPay').textContent=fmt(pay)+' تومان';
 }
 function saveInvoice(){
   const c=draft.customerId?customer(draft.customerId):null;
   if(!c){toast('اول مشتری را انتخاب کنید',1);return}
-  const date=$('#invDate').value||todayStr();
+  const date=jalGet('invDate')||todayStr();
   const lines=[];const warn=[];
   $$('#invLines .line').forEach(l=>{
     if(!l.querySelector('.chk').checked)return;
-    const name=l.querySelector('.name-inp').value.trim();
-    const q=num(l.querySelector('.qty').value),p=num(l.querySelector('.price').value);
-    if(!name||q<=0||$('#priceEmpty',l))return;
-    if(p<0)return;
-    if(q<=0||name==='')return;
+    const name=l.dataset.name||l.querySelector('.name-inp')?.value.trim()||'';
+    const q=num(normDigits(l.querySelector('.qty').value));
+    const p=parseInt(l.querySelector('.price').dataset.raw||'0',10)||0;
+    if(!name||q<=0)return;
     const {cost,alloc,short}=consume(name,q);
     if(short>0)warn.push(`«${name}»: ${fmt(short)} عدد بیشتر از موجودی انبار فروخته شد (بهای تمام‌شده ثبت نشد)`);
     lines.push({name,qty:q,unitPrice:p,cost,alloc});
   });
   if(!lines.length){toast('حداقل یک خدمت/محصول تیک بزنید',1);return}
   const gross=lines.reduce((s,l)=>s+l.qty*l.unitPrice,0);
-  const discount=Math.min(num($('#invDisc').value),gross);
+  const discount=Math.min(moneyVal('invDisc'),gross);
   const total=gross-discount;
   const cost=lines.reduce((s,l)=>s+l.cost,0);
   const payType=document.querySelector('input[name=pay]:checked').value;
-  if(payType==='cheque'&&!$('#invChqDue').value){toast('سررسید چک مشتری را وارد کنید',1);return}
+  const chqDue=payType==='cheque'?jalGet('invChqDue'):'';
+  if(payType==='cheque'&&!chqDue){toast('سررسید چک مشتری را وارد کنید',1);return}
   const no=++db.seq;
   const inv={id:uid(),no,date,customerId:c.id,items:lines,discount,total,cost,payType,
-    odometer:num($('#invOdo').value)||null,nextKm:num($('#invNextKm').value)||null,createdAt:new Date().toISOString()};
+    odometer:num(normDigits($('#invOdo').value))||null,nextKm:num(normDigits($('#invNextKm').value))||null,createdAt:new Date().toISOString()};
   db.invoices.push(inv);
   if(payType==='cheque'){
-    db.cheques.push({id:uid(),direction:'in',party:c.name,amount:total,dueDate:$('#invChqDue').value,status:'open',bank:'',serial:'',invoiceId:inv.id});
+    db.cheques.push({id:uid(),direction:'in',party:c.name,amount:total,dueDate:chqDue,status:'open',bank:'',serial:'',invoiceId:inv.id});
   }
   saveDB();
-  const chqNote=payType==='cheque'?`<p class="o" style="font-size:13px;margin-top:8px">چک مشتری با سررسید ${faDate($('#invChqDue').value)} در لیست چک‌ها ثبت شد.</p>`:'';
+  const chqNote=payType==='cheque'?`<p class="o" style="font-size:13px;margin-top:8px">چک مشتری با سررسید ${faDate(chqDue)} در لیست چک‌ها ثبت شد.</p>`:'';
   openModal('فاکتور ثبت شد ✓',`
     <p>فاکتور شماره <b class="num y">${no}</b> برای <b>${esc(c.name)}</b> به مبلغ <b class="num y" style="font-size:17px">${fmt(total)}</b> تومان (${payTag(payType)}) ثبت شد.</p>
     ${warn.length?`<div style="background:#2A1B07;border:1px solid var(--orange);border-radius:9px;padding:10px 14px;margin-top:12px;font-size:13px;color:#FFD9A8">${warn.map(w=>'⚠ '+w).join('<br>')}</div>`:''}
@@ -894,7 +1163,7 @@ function viewInvoice(id){
     <div class="table-wrap"><table style="min-width:420px">
     <tr><td class="muted">مشتری</td><td><b>${esc(c?c.name:'—')}</b></td></tr>
     <tr><td class="muted">تاریخ</td><td class="num">${faDate(i.date)}</td></tr>
-    <tr><td class="muted">خودرو / پلاک</td><td>${esc(c?c.car:'')} ${esc(c?c.plate:'')}</td></tr>
+    <tr><td class="muted">خودرو / پلاک</td><td>${esc(c?c.car:'')} <span class="plate-tag num">${esc(c?plateText(c.plate):'')}</span></td></tr>
     ${i.nextKm?`<tr><td class="muted">مراجعه بعدی</td><td class="num o" style="font-weight:700">کیلومتر ${fmt(i.nextKm)}</td></tr>`:''}
     </table></div>
     <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>شرح</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>
@@ -903,7 +1172,8 @@ function viewInvoice(id){
     <div class="tot-row"><span>جمع</span><span class="v num">${fmt(i.total+i.discount)}</span></div>
     ${i.discount?`<div class="tot-row"><span>تخفیف</span><span class="v num r">${fmt(i.discount)}</span></div>`:''}
     <div class="tot-row grand"><span>پرداختی</span><span class="v num y">${fmt(i.total)}</span></div>
-    <div style="margin-top:8px">${payTag(i.payType)}</div>`,
+    <div style="margin-top:8px">${payTag(i.payType)}</div>
+    <p class="muted" style="font-size:12.5px;margin-top:6px">${num2fa(i.total)} تومان</p>`,
     `<button class="btn btn-danger" id="delInvBtn">حذف فاکتور</button><button class="btn btn-ghost" data-modal-close>بستن</button><button class="btn btn-y" id="prInv">چاپ</button>`,true);
   $('#prInv').onclick=()=>printInvoice(i.id);
   $('#delInvBtn').onclick=()=>confirmBox('این فاکتور حذف شود؟ موجودی کسرشده به انبار برمی‌گردد.',()=>{
@@ -922,7 +1192,7 @@ function renderInvoicesList(){
   ${list.length?tableWrap(`<table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>خودرو/پلاک</th><th>مبلغ</th><th>سود</th><th>نوع</th><th></th></tr></thead><tbody>
   ${list.map(i=>{const c=customer(i.customerId);const prof=i.total-i.cost;return `<tr>
     <td class="num">${i.no}</td><td class="num">${faDate(i.date)}</td>
-    <td><b>${esc(c?c.name:'—')}</b></td><td class="muted">${esc(c?c.car:'')} <span class="num">${esc(c?c.plate:'')}</span></td>
+    <td><b>${esc(c?c.name:'—')}</b></td><td class="muted">${esc(c?c.car:'')} <span class="num">${esc(c?plateText(c.plate):'')}</span></td>
     <td class="num" style="font-weight:700">${fmt(i.total)}</td>
     <td class="num" style="color:${prof>=0?'var(--yellow)':'var(--red)'}">${fmt(prof)}</td>
     <td>${payTag(i.payType)}</td>
@@ -938,17 +1208,17 @@ function printInvoice(id){
   $('#printArea').innerHTML=`
   <div class="pi-head">
     <div class="shop">تعویض روغنی و آپاراتی شهسواری
-      <small>میدان ابوالفضل، ابتدای بلوار خیرآباد، نبش بن‌بست صدوقی — ۰۹۱۳۷۲۳۶۶۹۳</small></div>
+      <small>میدان ابوالفضل، ابتدای بلوار خیرآباد، نبش بن‌بست صدوقی — 09137236693</small></div>
     <div style="width:130px">${logoFull(130).replace('<rect x="4" y="4" width="392" height="202" rx="18" fill="#141412" stroke="#2e2d28"/>','')}</div>
     <div class="pi-title">فاکتور فروش</div>
   </div>
   <div class="pi-meta">
     <div>شماره فاکتور: <b class="num">${i.no}</b></div>
-    <div>تاریخ: <b>${faDate(i.date)}</b></div>
+    <div>تاریخ: <b class="num">${faDate(i.date)}</b></div>
     <div>مشتری: <b>${esc(c?c.name:'—')}</b></div>
     <div>تلفن: <b class="num">${esc(c?c.phone:'—')}</b></div>
     <div>خودرو: <b>${esc(c?c.car:'—')}</b></div>
-    <div>پلاک: <b class="num">${esc(c?c.plate:'—')}</b></div>
+    <div>پلاک: <b class="num">${esc(c?plateText(c.plate):'—')}</b></div>
     ${i.odometer?`<div>کیلومتر امروز: <b class="num">${fmt(i.odometer)}</b></div>`:''}
     ${i.nextKm?`<div>مراجعه بعدی: <b class="num">کیلومتر ${fmt(i.nextKm)}</b></div>`:''}
   </div>
@@ -958,6 +1228,7 @@ function printInvoice(id){
     <div><span>جمع کل</span><b class="num">${fmt(i.total+i.discount)}</b></div>
     ${i.discount?`<div><span>تخفیف</span><b class="num">${fmt(i.discount)}</b></div>`:''}
     <div class="g"><span>قابل پرداخت</span><span class="num">${fmt(i.total)} تومان</span></div>
+    <div style="font-size:12px"><span></span><span>${num2fa(i.total)} تومان</span></div>
     <div><span>نحوه پرداخت</span><b>${i.payType==='cash'?'نقدی':i.payType==='credit'?'نسیه (دفتری)':'چک'}</b></div>
   </div>
   ${i.nextKm?`<div class="pi-note">🔔 دفعه بعد در <b>کیلومتر ${fmt(i.nextKm)}</b> برای سرویس بعدی مراجعه کنید.</div>`:''}
@@ -982,7 +1253,7 @@ function renderLedger(){
   </div>
   <div class="card"><h2>حساب‌های باز</h2>
   ${rows.length?tableWrap(`<table><thead><tr><th>مشتری</th><th>تلفن</th><th>پلاک</th><th>مانده</th><th>وضعیت</th><th></th></tr></thead><tbody>
-  ${rows.map(({c,bal})=>`<tr><td><b>${esc(c.name)}</b></td><td class="num">${esc(c.phone||'—')}</td><td class="num">${esc(c.plate||'—')}</td>
+  ${rows.map(({c,bal})=>`<tr><td><b>${esc(c.name)}</b></td><td class="num">${esc(c.phone||'—')}</td><td class="num">${esc(plateText(c.plate))}</td>
     <td class="num" style="font-weight:800">${fmt(Math.abs(bal))}</td>
     <td>${bal>0?'<span class="tag tag-r">بدهکار</span>':'<span class="tag tag-y">بستانکار</span>'}</td>
     <td><button class="btn btn-y btn-sm" data-settle="${c.id}">تسویه / دریافت</button>
@@ -996,14 +1267,16 @@ function openSettleModal(cid){
   const c=customer(cid);const bal=balanceOf(cid);
   openModal('تسویه حساب — '+esc(c.name),`
     <p style="margin-bottom:12px;font-size:14px">مانده فعلی: <b class="num ${bal>0?'r':'y'}" style="font-size:17px">${fmt(Math.abs(bal))}</b> تومان ${bal>0?'بدهی مشتری':'اعتبار مشتری'}</p>
-    <div class="field"><label>مبلغ دریافت/پرداخت (تومان) *</label><input class="inp num" id="stAmt" type="number" min="0" value="${bal>0?bal:''}"></div>
-    <div class="field"><label>تاریخ</label><input class="inp num" id="stDate" type="date" value="${todayStr()}"></div>
+    <div class="field"><label>مبلغ دریافت/پرداخت (تومان) *</label>${moneyField('stAmt',bal>0?bal:'')}</div>
+    <div class="field"><label>تاریخ</label>${jalSelects('stDate',todayStr())}</div>
     <div class="field"><label>توضیح</label><input class="inp" id="stNote" placeholder="مثلاً تسویه کامل فاکتور ۱۰۰۲"></div>
     <p class="muted" style="font-size:12.5px">مبلغ مثبت = پرداخت مشتری (کاهش بدهی). برای برگشت وجه به مشتری، مبلغ را منفی وارد کنید.</p>`,
     `<button class="btn btn-ghost" data-modal-close>انصراف</button><button class="btn btn-y" id="saveSt">ثبت</button>`);
   $('#saveSt').onclick=()=>{
-    const amt=num($('#stAmt').value);if(amt<=0){toast('مبلغ را وارد کنید',1);return}
-    db.payments.push({id:uid(),customerId:cid,amount:amt,date:$('#stDate').value||todayStr(),note:$('#stNote').value.trim()});
+    let amt=moneyVal('stAmt');
+    if(amt<=0){toast('مبلغ را وارد کنید',1);return}
+    if(bal<0)amt=-amt; /* مشتری بستانکار است؛ ثبت به عنوان کاهش اعتبار */
+    db.payments.push({id:uid(),customerId:cid,amount:amt,date:jalGet('stDate')||todayStr(),note:$('#stNote').value.trim()});
     saveDB();closeModal();renderLedger();toast('تسویه ثبت شد ✓');
   };
 }
@@ -1013,7 +1286,7 @@ function showLedgerDetail(cid){
   const pays=db.payments.filter(p=>p.customerId===cid);
   const rows=[
     ...invs.map(i=>({date:i.date,desc:`فاکتور ${i.no}${i.payType==='credit'?' — نسیه':''}`,amt:i.payType==='credit'?i.total:0,sign:+1})),
-    ...pays.map(p=>({date:p.date,desc:'دریافت/تسویه'+(p.note?' — '+p.note:''),amt:p.amount,sign:-1}))
+    ...pays.map(p=>({date:p.date,desc:'دریافت/تسویه'+(p.note?' — '+p.note:''),amt:Math.abs(p.amount),sign:p.amount>=0?-1:+1}))
   ].sort((a,b)=>a.date.localeCompare(b.date));
   openModal('ریز حساب — '+esc(c.name),`
     ${rows.length?`<div class="table-wrap"><table><thead><tr><th>تاریخ</th><th>شرح</th><th>بدهی</th><th>پرداخت</th></tr></thead><tbody>
@@ -1024,45 +1297,55 @@ function showLedgerDetail(cid){
 }
 
 /* ================= گزارش فروش ================= */
+function jalMonthRange(offset){
+  const j=toJal(todayStr());
+  let m=j.jm+offset,y=j.jy;
+  while(m>12){m-=12;y++}while(m<1){m+=12;y--}
+  const from=toIso(y,m,1);
+  let m2=m+1,y2=y;if(m2>12){m2=1;y2++}
+  const to=toIso(y2,m2,1);
+  const td=new Date(to+'T00:00:00');td.setDate(td.getDate()-1);
+  return{from,to:td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0')};
+}
 function renderReport(){
-  const t=new Date();const iso=todayStr();
-  const weekStart=new Date(t);weekStart.setDate(t.getDate()-6);
-  const monthStart=iso.slice(0,8)+'01';
-  const w=weekStart.getFullYear()+'-'+String(weekStart.getMonth()+1).padStart(2,'0')+'-'+String(weekStart.getDate()).padStart(2,'0');
+  const iso=todayStr();
+  const wD=new Date();wD.setDate(wD.getDate()-6);
+  const weekFrom=wD.getFullYear()+'-'+String(wD.getMonth()+1).padStart(2,'0')+'-'+String(wD.getDate()).padStart(2,'0');
+  const thisM=jalMonthRange(0),prevM=jalMonthRange(-1);
   $('#page-report .page-body').innerHTML=`
   <div class="tabs" id="repTabs">
     <button class="tab on" data-range="today">امروز</button>
     <button class="tab" data-range="week">۷ روز اخیر</button>
-    <button class="tab" data-range="month">این ماه</button>
-    <button class="tab" data-range="prev">ماه قبل</button>
+    <button class="tab" data-range="month">این ماه (${JMONTHS[toJal(iso).jm-1]})</button>
+    <button class="tab" data-range="prev">ماه قبل (${JMONTHS[(toJal(iso).jm+10)%12]})</button>
     <button class="tab" data-range="all">همه</button>
   </div>
   <div class="card" style="margin-bottom:16px">
     <div class="row" style="align-items:flex-end">
-      <div class="field" style="margin:0"><label>از تاریخ</label><input class="inp num" id="repFrom" type="date"></div>
-      <div class="field" style="margin:0"><label>تا تاریخ</label><input class="inp num" id="repTo" type="date" value="${iso}"></div>
+      <div class="field" style="margin:0;flex:2"><label>از تاریخ (شمسی)</label>${jalSelects('repFrom',iso)}</div>
+      <div class="field" style="margin:0;flex:2"><label>تا تاریخ (شمسی)</label>${jalSelects('repTo',iso)}</div>
       <button class="btn btn-y" id="repApply">اعمال</button>
     </div>
   </div>
   <div id="repOut"></div>`;
-  let range={from:iso,to:iso};
-  const setRange=(f,to)=>{range={from:f,to};$('#repFrom').value=f;$('#repTo').value=to;draw()};
-  const draw=()=>{$('#repOut').innerHTML=reportHTML(range.from,range.to)};
+  let fixed=null; /* وقتی تب «همه» فعال است، بازه مستقل از انتخابگرهاست */
+  const draw=()=>{
+    const f=fixed?fixed.from:(jalGet('repFrom')||'2000-01-01');
+    const t=fixed?fixed.to:(jalGet('repTo')||'2099-12-31');
+    $('#repOut').innerHTML=reportHTML(f,t);
+  };
+  const setRange=(f,t)=>{fixed=null;jalSet('repFrom',f);jalSet('repTo',t);draw()};
   $('#repTabs').onclick=e=>{
     const b=e.target.closest('.tab');if(!b)return;
     $$('#repTabs .tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');
     const r=b.dataset.range;
     if(r==='today')setRange(iso,iso);
-    else if(r==='week')setRange(w,iso);
-    else if(r==='month')setRange(monthStart,iso);
-    else if(r==='prev'){
-      const y=t.getMonth()===0?t.getFullYear()-1:t.getFullYear(),m=t.getMonth()===0?12:t.getMonth();
-      const last=new Date(y,m,0).getDate();
-      setRange(y+'-'+String(m).padStart(2,'0')+'-01',y+'-'+String(m).padStart(2,'0')+'-'+last);
-    }
-    else setRange('2000-01-01','2099-12-31');
+    else if(r==='week')setRange(weekFrom,iso);
+    else if(r==='month')setRange(thisM.from,thisM.to);
+    else if(r==='prev')setRange(prevM.from,prevM.to);
+    else{fixed={from:'1900-01-01',to:'2099-12-31'};draw()}
   };
-  $('#repApply').onclick=()=>{range={from:$('#repFrom').value||'2000-01-01',to:$('#repTo').value||'2099-12-31'};draw()};
+  $('#repApply').onclick=()=>{fixed=null;draw()};
   draw();
 }
 function reportHTML(from,to){
@@ -1078,6 +1361,7 @@ function reportHTML(from,to){
   invs.forEach(i=>i.items.forEach(l=>{const k=l.name;byProd[k]=byProd[k]||{qty:0,sale:0};byProd[k].qty+=l.qty;byProd[k].sale+=l.qty*l.unitPrice}));
   const prods=Object.entries(byProd).sort((a,b)=>b[1].sale-a[1].sale);
   return `
+  <p class="muted" style="font-size:13px;margin-bottom:12px">بازه: <b class="num">${faDate(from)}</b> تا <b class="num">${faDate(to)}</b></p>
   <div class="grid g4">
     <div class="stat hl"><div class="lbl">فروش کل</div><div class="val num">${fmt(rev)}</div><div class="lbl">تومان</div></div>
     <div class="stat"><div class="lbl">نقدی</div><div class="val num">${fmt(cash)}</div></div>
@@ -1107,10 +1391,10 @@ function renderSettings(){
   $('#page-settings .page-body').innerHTML=`
   <div class="grid g2">
     <div class="card"><h2>🔐 تغییر رمز ورود</h2>
-      <div class="field"><label>رمز فعلی</label><input class="inp num" id="pinOld" type="password" maxlength="4" inputmode="numeric"></div>
+      <div class="field"><label>رمز فعلی</label><input class="inp num fa-num" id="pinOld" type="password" maxlength="4" inputmode="numeric"></div>
       <div class="row">
-        <div class="field"><label>رمز جدید (۴ رقم)</label><input class="inp num" id="pinNew" type="password" maxlength="4" inputmode="numeric"></div>
-        <div class="field"><label>تکرار رمز جدید</label><input class="inp num" id="pinNew2" type="password" maxlength="4" inputmode="numeric"></div>
+        <div class="field"><label>رمز جدید (۴ رقم)</label><input class="inp num fa-num" id="pinNew" type="password" maxlength="4" inputmode="numeric"></div>
+        <div class="field"><label>تکرار رمز جدید</label><input class="inp num fa-num" id="pinNew2" type="password" maxlength="4" inputmode="numeric"></div>
       </div>
       <button class="btn btn-y" id="savePin">تغییر رمز</button>
     </div>
@@ -1131,14 +1415,14 @@ function renderSettings(){
       <p style="font-size:14px;line-height:2">
       <b>تعویض روغنی و آپاراتی شهسواری</b><br>
       میدان ابوالفضل، ابتدای بلوار خیرآباد، نبش بن‌بست صدوقی<br>
-      تلفن: <span class="num">۰۹۱۳۷۲۳۶۶۹۳</span></p>
+      تلفن: <span class="num">09137236693</span></p>
       <hr style="border:none;border-top:1px solid var(--line-soft);margin:12px 0">
       <button class="btn btn-danger" id="resetBtn">پاک کردن همه‌ی داده‌ها</button>
       <p class="muted" style="font-size:12px;margin-top:8px">قبل از این کار حتماً پشتیبان بگیرید!</p>
     </div>
   </div>`;
   $('#savePin').onclick=()=>{
-    const o=$('#pinOld').value,n=$('#pinNew').value,n2=$('#pinNew2').value;
+    const o=normDigits($('#pinOld').value),n=normDigits($('#pinNew').value),n2=normDigits($('#pinNew2').value);
     if(o!==db.pin){toast('رمز فعلی اشتباه است',1);return}
     if(!/^\d{4}$/.test(n)){toast('رمز جدید باید ۴ رقم باشد',1);return}
     if(n!==n2){toast('تکرار رمز مطابقت ندارد',1);return}
@@ -1153,7 +1437,7 @@ function renderSettings(){
   $('#backupBtn').onclick=()=>{
     const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='shahsavari-backup-'+todayStr()+'.json';a.click();URL.revokeObjectURL(a.href);
+    a.download='shahsavari-backup-'+faDate(todayStr()).replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(a.href);
     toast('فایل پشتیبان دانلود شد ✓');
   };
   $('#restoreBtn').onclick=()=>$('#restoreFile').click();
@@ -1172,7 +1456,7 @@ function renderSettings(){
     r.readAsText(f);
   };
   $('#resetBtn').onclick=()=>confirmBox('همه‌ی انبار، فاکتورها، مشتریان و چک‌ها برای همیشه پاک می‌شود. ادامه می‌دهید؟',()=>{
-    db={pin:db.pin,seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],settings:{}};
+    db={pin:db.pin,seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],products:[],settings:{}};
     saveDB();toast('همه داده‌ها پاک شد');go('dashboard');
   });
 }
