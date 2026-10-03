@@ -479,12 +479,13 @@ function loadDB(){
         }
         d.expenses=Array.isArray(d.expenses)?d.expenses:[];
         d.scraps=Array.isArray(d.scraps)?d.scraps:[];
+        d.supPayments=Array.isArray(d.supPayments)?d.supPayments:[];
         d.laborPrices=(d.laborPrices&&typeof d.laborPrices==='object')?d.laborPrices:{};
         return d;
       }
     }
   }catch(e){}
-  return {pin:'1234',seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],products:[],expenses:[],scraps:[],laborPrices:{},settings:{}};
+  return {pin:'1234',seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],products:[],expenses:[],scraps:[],supPayments:[],laborPrices:{},settings:{}};
 }
 function saveDB(){
   try{localStorage.removeItem('shahsavari_db_v1');localStorage.setItem(DB_KEY,JSON.stringify(db))}
@@ -533,6 +534,18 @@ function consume(name,qty){
 function todayInvoices(){return db.invoices.filter(function(i){return i.date===todayStr()})}
 function expensesSum(from,to){return db.expenses.filter(function(x){return x.date>=from&&x.date<=to}).reduce(function(s,x){return s+x.amount},0)}
 function scrapsSum(from,to){return db.scraps.filter(function(x){return x.date>=from&&x.date<=to}).reduce(function(s,x){return s+x.amount},0)}
+
+/* ---------- مانده فروشنده: خریدها منهای پرداخت‌های زمان خرید و تسویه‌های بعدی ---------- */
+function supplierSupPayments(sid){
+  return db.supPayments.filter(function(p){return p.supplierId===sid});
+}
+function supplierBalance(s){
+  var bs=db.batches.filter(function(x){return x.supplierId===s.id});
+  var total=bs.reduce(function(t,x){return t+x.qty*x.buyPrice},0);
+  var paid=bs.reduce(function(t,x){return t+(x.payCash||0)+(x.payCheque||0)},0);
+  paid+=supplierSupPayments(s.id).reduce(function(t,p){return t+p.amount},0);
+  return{total:total,paid:paid,bal:total-paid};
+}
 
 /* ---------- پلاک ---------- */
 function parsePlate(s){
@@ -733,7 +746,7 @@ function chequeRow(c){
   var d=daysDiff(c.dueDate);
   var when=d===0?'امروز':(d===1?'فردا':(d<0?Math.abs(d)+' روز گذشته':d+' روز دیگر'));
   return '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px">'
-    +'<div><b>'+esc(c.party)+'<\/b> <span class="muted">('+(c.direction==='out'?'چک صادره به فروشنده':'چک دریافتی از مشتری')+')<\/span><\/div>'
+    +'<div><b>'+esc(c.party)+'<\/b> <span class="muted">('+(c.direction==='out'?'چک صادره به فروشنده':'چک دریافتی از مشتری')+')</span><\/div>'
     +'<div><span class="num" style="font-weight:800">'+fmt(c.amount)+'<\/span> تومان — سررسید: <b class="o">'+when+'<\/b> <span class="muted num">('+faDate(c.dueDate)+')<\/span><\/div><\/div>';
 }
 function alarmHint(due){
@@ -907,7 +920,7 @@ function openPurchaseModal(){
     +'<div class="field"><label>پرداخت با چک (تومان)<\/label>'+moneyField('pChq','')+'<\/div>'
     +'<\/div>'
     +'<div class="field" id="pChqDateWrap" style="display:none"><label>تاریخ سررسید چک *<\/label>'+jalSelects('pChqDate','')+'<\/div>'
-    +'<p class="muted" style="font-size:12px">در ستون «٪» درصد سود بدهید (مثلاً 20) تا قیمت فروش خودکار محاسبه شود؛ یا قیمت فروش را دستی وارد کنید.<\/p>',
+    +'<p class="muted" style="font-size:12px">در ستون «٪» درصد سود بدهید (مثلاً 20) تا قیمت فروش خودکار محاسبه شود؛ یا قیمت فروش را دستی وارد کنید. اگر مبلغ خرید را کامل نپردازید، مانده به حساب فروشنده می‌آید و بعداً از کارت او «تسویه» کنید.<\/p>',
     '<button class="btn btn-ghost" data-modal-close>انصراف<\/button><button class="btn btn-y" id="savePurchase">ذخیره فاکتور خرید<\/button>',true);
   purBindBrands();
   $('#purAdd').addEventListener('click',function(){
@@ -1048,16 +1061,20 @@ function renderSuppliers(){
   if(db.suppliers.length){
     h+='<div class="grid g2">';
     db.suppliers.forEach(function(s){
-      var bs=db.batches.filter(function(x){return x.supplierId===s.id});
-      var total=bs.reduce(function(t,x){return t+x.qty*x.buyPrice},0);
-      var cash=bs.reduce(function(t,x){return t+x.payCash},0);
-      var chq=bs.reduce(function(t,x){return t+x.payCheque},0);
+      var st=supplierBalance(s);
+      var pays=supplierSupPayments(s.id);
       h+='<div class="card"><h2>'+esc(s.name)+' '+(s.phone?'<small class="num">'+esc(s.phone)+'<\/small>':'')+'<\/h2>'
-        +'<div class="tot-row"><span>جمع خرید<\/span><span class="v num">'+fmt(total)+'<\/span><\/div>'
-        +'<div class="tot-row"><span>پرداخت نقدی<\/span><span class="v num y">'+fmt(cash)+'<\/span><\/div>'
-        +'<div class="tot-row"><span>پرداخت با چک<\/span><span class="v num o">'+fmt(chq)+'<\/span><\/div>'
-        +'<div class="tot-row grand"><span>مانده بدهی<\/span><span class="v num '+((total-cash-chq)>0?'r':'')+'">'+fmt(total-cash-chq)+'<\/span><\/div>'
-        +'<div class="row" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-sup-detail="'+s.id+'">ریز صورتحساب<\/button>'
+        +'<div class="tot-row"><span>جمع خرید<\/span><span class="v num">'+fmt(st.total)+'<\/span><\/div>'
+        +'<div class="tot-row"><span>پرداخت نقدی (زمان خرید + تسویه)<\/span><span class="v num y">'+fmt(st.paid)+'<\/span><\/div>';
+      if(pays.length){
+        var sc=pays.filter(function(p){return p.type==='cash'}).reduce(function(t,p){return t+p.amount},0);
+        var kq=pays.filter(function(p){return p.type==='cheque'}).reduce(function(t,p){return t+p.amount},0);
+        h+='<div class="tot-row"><span class="muted">↳ تسویه‌های بعدی<\/span><span class="num muted" style="font-size:12.5px">نقد: '+fmt(sc)+' | چک: '+fmt(kq)+'<\/span><\/div>';
+      }
+      h+='<div class="tot-row grand"><span>مانده بدهی<\/span><span class="v num '+(st.bal>0?'r':'')+'">'+fmt(st.bal)+'<\/span><\/div>'
+        +'<div class="row" style="margin-top:12px">'
+        +(st.bal>0?'<button class="btn btn-y btn-sm" data-sup-settle="'+s.id+'">تسویه / پرداخت<\/button>':'')
+        +'<button class="btn btn-ghost btn-sm" data-sup-detail="'+s.id+'">ریز صورتحساب<\/button>'
         +'<button class="btn btn-ghost btn-sm" data-edit-sup="'+s.id+'">ویرایش<\/button>'
         +'<button class="btn btn-danger btn-sm" data-del-sup="'+s.id+'">حذف<\/button><\/div><\/div>';
     });
@@ -1065,12 +1082,18 @@ function renderSuppliers(){
   }else h+=emptyBox('فروشنده‌ای ثبت نشده — موقع ثبت فاکتور خرید می‌توانید همان‌جا فروشنده جدید اضافه کنید');
   $('#page-suppliers .page-body').innerHTML=h;
   $('#addSup').addEventListener('click',function(){openSupplierModal()});
+  $$('#page-suppliers [data-sup-settle]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var s=db.suppliers.find(function(x){return x.id===el.dataset.supSettle});
+      if(s)openSupplierSettleModal(s);
+    });
+  });
   $$('#page-suppliers [data-edit-sup]').forEach(function(el){
     el.addEventListener('click',function(){openSupplierModal(db.suppliers.find(function(s){return s.id===el.dataset.editSup}))});
   });
   $$('#page-suppliers [data-del-sup]').forEach(function(el){
     el.addEventListener('click',function(){
-      confirmBox('این فروشنده حذف شود؟ (خریدهای قبلی باقی می‌مانند)',function(){
+      confirmBox('این فروشنده حذف شود؟ (خریدها و تسویه‌های قبلی باقی می‌مانند)',function(){
         db.suppliers=db.suppliers.filter(function(s){return s.id!==el.dataset.delSup});
         saveDB();renderSuppliers();toast('حذف شد');
       });
@@ -1094,25 +1117,95 @@ function openSupplierModal(s){
     saveDB();closeModal();renderSuppliers();toast('ذخیره شد ✓');
   });
 }
+
+/* ---------- تسویه بدهی فروشنده (نقدی یا چک) ---------- */
+function openSupplierSettleModal(s){
+  var st=supplierBalance(s);
+  openModal('تسویه حساب — '+esc(s.name),
+    '<p style="margin-bottom:12px;font-size:14px">مانده بدهی فعلی: <b class="num r" style="font-size:17px">'+fmt(st.bal)+'<\/b> تومان <span class="muted">(از '+fmt(st.total)+' خرید، '+fmt(st.paid)+' پرداخت شده)<\/span><\/p>'
+    +'<div class="field"><label>نوع پرداخت<\/label><select class="inp" id="ssType"><option value="cash">نقدی<\/option><option value="cheque">چک<\/option><\/select><\/div>'
+    +'<div class="row">'
+    +'<div class="field"><label>مبلغ (تومان) *<\/label>'+moneyField('ssAmt',st.bal,'')+'<\/div>'
+    +'<div class="field"><label>تاریخ<\/label>'+jalSelects('ssDate',todayStr())+'<\/div>'
+    +'<\/div>'
+    +'<div id="ssChequeWrap" style="display:none">'
+    +'<div class="row">'
+    +'<div class="field"><label>تاریخ سررسید چک *<\/label>'+jalSelects('ssChqDue','')+'<\/div>'
+    +'<div class="field"><label>بانک<\/label><input class="inp" id="ssBank" placeholder="اختیاری"><\/div>'
+    +'<\/div>'
+    +'<div class="row">'
+    +'<div class="field"><label>شماره / سریال چک<\/label><input class="inp num fa-num" id="ssSerial" placeholder="اختیاری"><\/div>'
+    +'<\/div>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="ssRegChq" checked style="width:18px;height:18px;accent-color:var(--yellow)">چک در لیست چک‌های صادره هم ثبت شود<\/label>'
+    +'<\/div>'
+    +'<div class="field"><label>توضیح<\/label><input class="inp" id="ssNote" placeholder="مثلاً تسویه بقیه حساب"><\/div>'
+    +'<p class="muted" style="font-size:12.5px">مبلغ به مانده بدهی فروشنده اضافه (کسر) می‌شود. اگر بیشتر از بدهی بدهید، به‌عنوان اعتبار نزد فروشنده در ریز حساب می‌ماند.<\/p>',
+    '<button class="btn btn-ghost" data-modal-close>انصراف<\/button><button class="btn btn-y" id="saveSS">ثبت تسویه<\/button>');
+  $('#ssType').addEventListener('change',function(){
+    $('#ssChequeWrap').style.display=this.value==='cheque'?'block':'none';
+  });
+  $('#saveSS').addEventListener('click',function(){
+    var amt=moneyVal('ssAmt');
+    if(amt<=0){toast('مبلغ را وارد کنید',1);return}
+    var type=$('#ssType').value;
+    var date=jalGet('ssDate')||todayStr();
+    if(type==='cheque'&&!jalGet('ssChqDate')){toast('تاریخ سررسید چک را وارد کنید',1);return}
+    var pid=uid();
+    db.supPayments.push({id:pid,supplierId:s.id,type:type,amount:amt,date:date,note:$('#ssNote').value.trim(),bank:type==='cheque'?$('#ssBank').value.trim():'',serial:type==='cheque'?$('#ssSerial').value.trim():''});
+    if(type==='cheque'&&$('#ssRegChq').checked){
+      db.cheques.push({id:uid(),direction:'out',party:s.name,amount:amt,dueDate:jalGet('ssChqDate'),status:'open',bank:$('#ssBank').value.trim(),serial:$('#ssSerial').value.trim(),supPaymentId:pid});
+    }
+    saveDB();closeModal();renderSuppliers();
+    toast('تسویه '+fmt(amt)+' تومانی ثبت شد ✓');
+  });
+}
+
 function showSupplierDetail(id){
   var s=db.suppliers.find(function(x){return x.id===id});
   if(!s)return;
+  var st=supplierBalance(s);
   var bs=db.batches.filter(function(x){return x.supplierId===id});
-  var chqs=db.cheques.filter(function(c){return c.direction==='out'&&bs.some(function(b){return b.id===c.batchId})});
+  var pays=supplierSupPayments(id);
+  var chqs=db.cheques.filter(function(c){return c.direction==='out'&&(bs.some(function(b){return b.id===c.batchId})||c.supPaymentId)});
   var body='';
+  body+='<div class="tot-row grand" style="margin-bottom:12px"><span>مانده بدهی</span><span class="v num '+(st.bal>0?'r':'')+'">'+fmt(st.bal)+' تومان<\/span><\/div>';
   if(bs.length){
-    body+='<div class="table-wrap"><table><thead><tr><th>تاریخ<\/th><th>دسته<\/th><th>محصول<\/th><th>تعداد<\/th><th>قیمت واحد<\/th><th>جمع<\/th><th>نقد<\/th><th>چک<\/th><\/tr><\/thead><tbody>';
+    body+='<div class="cat-h">خریدها<\/div><div class="table-wrap"><table><thead><tr><th>تاریخ<\/th><th>دسته<\/th><th>محصول<\/th><th>تعداد<\/th><th>قیمت واحد<\/th><th>جمع<\/th><th>نقد<\/th><th>چک<\/th><\/tr><\/thead><tbody>';
     bs.forEach(function(b){
-      body+='<tr><td class="num">'+faDate(b.date)+'<\/td><td>'+esc(b.cat||guessCat(b.product))+'<\/td><td>'+esc(b.product)+'<\/td><td class="num">'+fmt(b.qty)+'<\/td><td class="num">'+fmt(b.buyPrice)+'<\/td><td class="num">'+fmt(b.qty*b.buyPrice)+'<\/td><td class="num">'+fmt(b.payCash)+'<\/td><td class="num">'+fmt(b.payCheque)+'<\/td><\/tr>';
+      body+='<tr><td class="num">'+faDate(b.date)+'<\/td><td>'+esc(b.cat||guessCat(b.product))+'<\/td><td>'+esc(b.product)+'<\/td><td class="num">'+fmt(b.qty)+'<\/td><td class="num">'+fmt(b.buyPrice)+'<\/td><td class="num">'+fmt(b.qty*b.buyPrice)+'<\/td><td class="num">'+fmt(b.payCash||0)+'<\/td><td class="num">'+fmt(b.payCheque||0)+'<\/td><\/tr>';
     });
     body+='<\/tbody><\/table><\/div>';
   }else body+='<p class="muted">خریدی از این فروشنده ثبت نشده.<\/p>';
+  if(pays.length){
+    body+='<div class="cat-h" style="margin-top:16px">تسویه‌های بعدی<\/div><div class="table-wrap"><table><thead><tr><th>تاریخ<\/th><th>نوع<\/th><th>مبلغ<\/th><th>سررسید چک<\/th><th>توضیح<\/th><th><\/th><\/tr><\/thead><tbody>';
+    [].concat(pays).reverse().forEach(function(p){
+      var chq=db.cheques.find(function(c){return c.supPaymentId===p.id});
+      body+='<tr><td class="num">'+faDate(p.date)+'<\/td><td>'+(p.type==='cash'?'<span class="tag tag-y">نقدی<\/span>':'<span class="tag tag-o">چک<\/span>')+'<\/td><td class="num" style="font-weight:700">'+fmt(p.amount)+'<\/td>'
+        +'<td class="num">'+(chq?faDate(chq.dueDate):'—')+(chq?' '+chqStatusTag(chq):'')+'<\/td>'
+        +'<td class="muted">'+esc(p.note||'—')+'<\/td>'
+        +'<td><button class="btn btn-danger btn-sm" data-ss-del="'+p.id+'">حذف<\/button><\/td><\/tr>';
+    });
+    body+='<\/tbody><\/table><\/div>';
+  }
   if(chqs.length){
-    body+='<h3 style="margin:16px 0 8px;font-size:14px">چک‌های صادره به این فروشنده<\/h3><div class="table-wrap"><table><thead><tr><th>مبلغ<\/th><th>سررسید<\/th><th>وضعیت<\/th><\/tr><\/thead><tbody>';
+    body+='<div class="cat-h" style="margin-top:16px">چک‌های صادره به این فروشنده<\/div><div class="table-wrap"><table><thead><tr><th>مبلغ<\/th><th>سررسید<\/th><th>وضعیت<\/th><\/tr><\/thead><tbody>';
     chqs.forEach(function(c){body+='<tr><td class="num">'+fmt(c.amount)+'<\/td><td class="num">'+faDate(c.dueDate)+'<\/td><td>'+chqStatusTag(c)+'<\/td><\/tr>'});
     body+='<\/tbody><\/table><\/div>';
   }
-  openModal('ریز صورتحساب — '+esc(s.name),body,'<button class="btn btn-y" data-modal-close>بستن<\/button>',true);
+  body+='<div class="row" style="margin-top:14px">'+(st.bal>0?'<button class="btn btn-y" id="ssDetailBtn">تسویه / پرداخت<\/button>':'')+'<button class="btn btn-ghost" data-modal-close>بستن<\/button><\/div>';
+  openModal('ریز صورتحساب — '+esc(s.name),body,'',true);
+  if(st.bal>0)$('#ssDetailBtn').addEventListener('click',function(){openSupplierSettleModal(s)});
+  $$('#modalRoot [data-ss-del]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var pid=el.dataset.ssDel;
+      var hasChq=db.cheques.some(function(c){return c.supPaymentId===pid});
+      confirmBox('این تسویه حذف شود؟'+(hasChq?' چک مرتبط با آن هم از لیست چک‌ها حذف می‌شود و مبلغ به بدهی برمی‌گردد.':' مبلغ به بدهی فروشنده برمی‌گردد.'),function(){
+        db.supPayments=db.supPayments.filter(function(p){return p.id!==pid});
+        db.cheques=db.cheques.filter(function(c){return c.supPaymentId!==pid});
+        saveDB();closeModal();renderSuppliers();toast('تسویه حذف شد');
+      });
+    });
+  });
 }
 
 /* ================= چک‌ها ================= */
@@ -1894,6 +1987,7 @@ function renderSettings(){
         confirmBox('تمام داده‌های فعلی با فایل پشتیبان جایگزین می‌شود. مطمئنید؟',function(){
           d.expenses=Array.isArray(d.expenses)?d.expenses:[];
           d.scraps=Array.isArray(d.scraps)?d.scraps:[];
+          d.supPayments=Array.isArray(d.supPayments)?d.supPayments:[];
           d.laborPrices=(d.laborPrices&&typeof d.laborPrices==='object')?d.laborPrices:{};
           db=d;saveDB();
           sessionStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(MGMT_KEY);
@@ -1905,7 +1999,7 @@ function renderSettings(){
   });
   $('#resetBtn').addEventListener('click',function(){
     confirmBox('همه‌ی انبار، فاکتورها، مشتریان، هزینه‌ها و چک‌ها برای همیشه پاک می‌شود. ادامه می‌دهید؟',function(){
-      db={pin:db.pin,seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],products:[],expenses:[],scraps:[],laborPrices:{},settings:{}};
+      db={pin:db.pin,seq:1000,batches:[],suppliers:[],cheques:[],customers:[],invoices:[],payments:[],products:[],expenses:[],scraps:[],supPayments:[],laborPrices:{},settings:{}};
       saveDB();toast('همه داده‌ها پاک شد');go('dashboard');
     });
   });
